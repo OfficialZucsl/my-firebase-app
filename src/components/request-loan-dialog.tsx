@@ -18,8 +18,33 @@ import { Slider } from '@/components/ui/slider';
 import { submitLoanRequest } from '@/app/actions';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2 } from 'lucide-react';
+import {
+  Bar,
+  BarChart,
+  CartesianGrid,
+  ResponsiveContainer,
+  XAxis,
+  YAxis,
+} from 'recharts';
+import {
+  ChartConfig,
+  ChartContainer,
+  ChartTooltip,
+  ChartTooltipContent,
+} from '@/components/ui/chart';
 
 const INTEREST_RATE = 0.055; // 5.5% annual interest rate
+
+const chartConfig = {
+  principal: {
+    label: 'Principal',
+    color: 'hsl(var(--chart-1))',
+  },
+  interest: {
+    label: 'Interest',
+    color: 'hsl(var(--chart-2))',
+  },
+} satisfies ChartConfig;
 
 export function RequestLoanDialog({ children }: { children: React.ReactNode }) {
   const [amount, setAmount] = useState(5000);
@@ -36,6 +61,25 @@ export function RequestLoanDialog({ children }: { children: React.ReactNode }) {
     (Math.pow(1 + monthlyInterestRate, duration) - 1);
 
   const totalRepayment = monthlyPayment * duration;
+
+  const amortizationData = Array.from({ length: duration }, (_, i) => {
+    const month = i + 1;
+    // This is a simplified calculation for visualization
+    let remainingBalance = amount;
+    for (let j = 0; j < i; j++) {
+      const interestPayment = remainingBalance * monthlyInterestRate;
+      const principalPayment = monthlyPayment - interestPayment;
+      remainingBalance -= principalPayment;
+    }
+    const interestPayment = remainingBalance * monthlyInterestRate;
+    const principalPayment = monthlyPayment - interestPayment;
+    
+    return {
+      month: month.toString(),
+      principal: parseFloat(principalPayment.toFixed(2)),
+      interest: parseFloat(interestPayment.toFixed(2)),
+    };
+  });
 
   const handleAmountChange = (value: number[]) => {
     setAmount(value[0]);
@@ -71,7 +115,7 @@ export function RequestLoanDialog({ children }: { children: React.ReactNode }) {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>{children}</DialogTrigger>
-      <DialogContent className="sm:max-w-[425px]">
+      <DialogContent className="sm:max-w-xl">
         <DialogHeader>
           <DialogTitle>Request a New Loan</DialogTitle>
           <DialogDescription>
@@ -124,6 +168,26 @@ export function RequestLoanDialog({ children }: { children: React.ReactNode }) {
                 <span>{(INTEREST_RATE * 100).toFixed(1)}% APR</span>
             </div>
           </div>
+           <div className="mt-4 rounded-lg border bg-muted p-4">
+             <h4 className="font-semibold text-sm mb-2">Repayment Schedule</h4>
+             <div className="h-[200px] w-full">
+              <ChartContainer config={chartConfig} className="min-h-[200px] w-full">
+                <BarChart accessibilityLayer data={amortizationData} stackOffset="sign" margin={{ top: 5, right: 20, left: -20, bottom: 5 }}>
+                  <CartesianGrid vertical={false} />
+                  <XAxis dataKey="month" tickLine={false} axisLine={false} tickMargin={8}
+                    tickFormatter={(value, index) => {
+                      if (duration <= 12) return value;
+                      // Show ticks for every year
+                      return (index + 1) % 12 === 0 ? `Yr ${Math.floor((index + 1) / 12)}` : "";
+                    }}/>
+                  <YAxis type="number" domain={['dataMin', 'auto']} tickFormatter={(value) => `$${value}`} />
+                  <ChartTooltip content={<ChartTooltipContent />} />
+                  <Bar dataKey="principal" fill="var(--color-principal)" stackId="a" radius={[4, 4, 0, 0]} />
+                  <Bar dataKey="interest" fill="var(--color-interest)" stackId="a" radius={[0, 0, 0, 0]} />
+                </BarChart>
+              </ChartContainer>
+            </div>
+           </div>
         </div>
         <DialogFooter>
           <Button
