@@ -23,6 +23,6 @@ export async function submitLoanRequest(
   // For now, we'll just simulate a successful submission.
   return {
     success: true,
-    message: `Your loan request for $${loanDetails.amount} has been submitted for review.`,
+    message: `Your loan request for ZMW ${loanDetails.amount} has been submitted for review.`,
   };
 }

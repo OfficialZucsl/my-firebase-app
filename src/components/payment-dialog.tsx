@@ -10,63 +10,53 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog';
-import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import type { Loan } from '@/lib/types';
-import { CreditCard, DollarSign } from 'lucide-react';
+import { Phone } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { useState } from 'react';
 
 export function PaymentDialog({ loan, children }: { loan: Loan, children: React.ReactNode }) {
   const { toast } = useToast();
+  const [open, setOpen] = useState(false);
 
   const handlePayment = () => {
     toast({
-      title: "Payment Successful!",
-      description: `Your payment of $${loan.nextPaymentAmount.toFixed(2)} for loan #${loan.id} has been processed.`,
-    })
+      title: "Payment Initiated!",
+      description: `Your payment of ZMW ${loan.nextPaymentAmount.toFixed(2)} for loan #${loan.id} has been processed.`,
+    });
+    setOpen(false);
   };
 
   return (
-    <Dialog>
+    <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>{children}</DialogTrigger>
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
           <DialogTitle>Make a Payment</DialogTitle>
           <DialogDescription>
-            Enter your payment details for loan #{loan.id}. The next payment amount is ${loan.nextPaymentAmount.toFixed(2)}.
+            Please send your payment to the mobile money number below. Your next payment is ZMW {loan.nextPaymentAmount.toFixed(2)}.
           </DialogDescription>
         </DialogHeader>
         <div className="grid gap-4 py-4">
-          <div className="grid grid-cols-4 items-center gap-4">
-            <Label htmlFor="card-name" className="text-right">
-              Name
-            </Label>
-            <Input id="card-name" defaultValue="John Doe" className="col-span-3" />
+          <div className="space-y-2">
+            <Label>Recipient Name</Label>
+            <p className="font-semibold">FiduciaLend Zambia</p>
           </div>
-          <div className="grid grid-cols-4 items-center gap-4">
-            <Label htmlFor="card-number" className="text-right">
-              Card
-            </Label>
-            <div className="relative col-span-3">
-              <Input id="card-number" defaultValue="4242 4242 4242 4242" />
-              <CreditCard className="absolute right-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
+          <div className="space-y-2">
+            <Label>Mobile Money Number</Label>
+            <div className="flex items-center gap-2">
+              <Phone className="size-4 text-muted-foreground" />
+              <p className="font-semibold">0977402171</p>
             </div>
           </div>
-          <div className="grid grid-cols-2 gap-4">
-             <div className="grid grid-cols-2 items-center gap-2">
-                <Label htmlFor="expiry" className="text-right">Expiry</Label>
-                <Input id="expiry" defaultValue="12/26" />
-             </div>
-             <div className="grid grid-cols-2 items-center gap-2">
-                <Label htmlFor="cvc" className="text-right">CVC</Label>
-                <Input id="cvc" defaultValue="123" />
-             </div>
-          </div>
+           <p className="text-sm text-muted-foreground">
+              After sending the payment, please allow up to 24 hours for it to reflect on your account.
+           </p>
         </div>
         <DialogFooter>
-          <Button type="submit" onClick={handlePayment}>
-            <DollarSign className="mr-2" />
-            Pay ${loan.nextPaymentAmount.toFixed(2)}
+          <Button type="button" onClick={handlePayment}>
+            Confirm Payment Sent
           </Button>
         </DialogFooter>
       </DialogContent>

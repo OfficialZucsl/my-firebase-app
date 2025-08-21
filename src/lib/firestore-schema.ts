@@ -5,12 +5,6 @@ import type { Timestamp } from 'firebase/firestore';
  *
  * This file defines the TypeScript interfaces for the documents stored in Firestore.
  * Using these interfaces helps ensure data consistency and provides type safety.
- *
- * The schema consists of the following collections:
- * - `users`: Stores user profile information.
- * - `loanApplications`: Stores user loan applications, pending, approved or rejected.
- * - `loans`: Stores active and past loans for users.
- * - `payments`: Stores payment history for each loan.
  */
 
 /**
@@ -33,7 +27,7 @@ export interface LoanApplication {
   userId: string; // Foreign key to the 'users' collection
   amount: number;
   purpose: string;
-  term: number; // in months
+  termInWeeks: number;
   status: 'pending' | 'approved' | 'rejected';
   createdAt: Timestamp;
   updatedAt: Timestamp;
@@ -48,7 +42,7 @@ export interface Loan {
   loanApplicationId: string; // Foreign key to the 'loanApplications' collection
   amount: number; // The principal amount of the loan
   interestRate: number; // Annual interest rate (e.g., 5.5 for 5.5%)
-  term: number; // Loan term in months
+  termInWeeks: number;
   status: 'Active' | 'Paid Off' | 'Overdue';
   startDate: Timestamp; // The date the loan was disbursed
   nextPaymentDate: Timestamp;
@@ -67,4 +61,31 @@ export interface Payment {
   amount: number;
   paymentDate: Timestamp;
   status: 'successful' | 'failed' | 'pending';
+}
+
+/**
+ * Represents a transaction document in the 'cashactivities' collection.
+ * This is used for digital receipts and cash management tracking.
+ */
+export interface Transaction {
+  id: string;
+  userId: string;
+  type: 'income' | 'expense' | 'loan_disbursal' | 'repayment';
+  amount: number;
+  description: string;
+  date: Timestamp;
+  relatedLoanId?: string; // Optional link to a loan
+}
+
+/**
+ * Represents an article in the 'articles' collection for personal finance learning.
+ */
+export interface Article {
+  id: string;
+  title: string;
+  author: string;
+  content: string; // Can be markdown or plain text
+  tags: string[];
+  createdAt: Timestamp;
+  imageUrl?: string;
 }

@@ -12,7 +12,6 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog';
-import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Slider } from '@/components/ui/slider';
 import { submitLoanRequest } from '@/app/actions';
@@ -22,7 +21,6 @@ import {
   Bar,
   BarChart,
   CartesianGrid,
-  ResponsiveContainer,
   XAxis,
   YAxis,
 } from 'recharts';
@@ -32,8 +30,6 @@ import {
   ChartTooltip,
   ChartTooltipContent,
 } from '@/components/ui/chart';
-
-const INTEREST_RATE = 0.055; // 5.5% annual interest rate
 
 const chartConfig = {
   principal: {
@@ -46,36 +42,48 @@ const chartConfig = {
   },
 } satisfies ChartConfig;
 
+// Function to calculate interest rate based on duration in weeks
+const calculateInterestRate = (durationInWeeks: number) => {
+  if (durationInWeeks === 1) return 0.15;
+  if (durationInWeeks === 2) return 0.20;
+  if (durationInWeeks === 3) return 0.25;
+  if (durationInWeeks >= 4) {
+    // For 4 weeks, it's 0.30. For longer durations, we apply compound interest.
+    // This is a simplified compound interest formula for demonstration.
+    // P(1 + r/n)^(nt)
+    // Let's simplify for this case: base rate for 4 weeks is 30%.
+    // For each additional 4-week period, we can compound.
+    const baseRate = 0.30;
+    const periods = Math.ceil(durationInWeeks / 4);
+    // Simplified: (1 + R)^n - 1
+    return Math.pow(1 + baseRate, periods) - 1;
+  }
+  return 0.15; // Default for less than 1 week (should not happen with slider min)
+};
+
+
 export function RequestLoanDialog({ children }: { children: React.ReactNode }) {
   const [amount, setAmount] = useState(5000);
-  const [duration, setDuration] = useState(24);
+  const [durationInWeeks, setDurationInWeeks] = useState(4);
   const [loading, setLoading] = useState(false);
   const [open, setOpen] = useState(false);
   const { toast } = useToast();
 
-  const monthlyInterestRate = INTEREST_RATE / 12;
-  const monthlyPayment =
-    (amount *
-      monthlyInterestRate *
-      Math.pow(1 + monthlyInterestRate, duration)) /
-    (Math.pow(1 + monthlyInterestRate, duration) - 1);
+  const interestRate = calculateInterestRate(durationInWeeks);
+  const totalInterest = amount * interestRate;
+  const totalRepayment = amount + totalInterest;
+  const weeklyPayment = totalRepayment / durationInWeeks;
 
-  const totalRepayment = monthlyPayment * duration;
-
-  const amortizationData = Array.from({ length: duration }, (_, i) => {
-    const month = i + 1;
-    // This is a simplified calculation for visualization
+  const amortizationData = Array.from({ length: durationInWeeks }, (_, i) => {
+    const week = i + 1;
     let remainingBalance = amount;
-    for (let j = 0; j < i; j++) {
-      const interestPayment = remainingBalance * monthlyInterestRate;
-      const principalPayment = monthlyPayment - interestPayment;
-      remainingBalance -= principalPayment;
-    }
-    const interestPayment = remainingBalance * monthlyInterestRate;
-    const principalPayment = monthlyPayment - interestPayment;
     
+    // Simplified amortization for visualization
+    const interestPayment = totalInterest / durationInWeeks;
+    const principalPayment = weeklyPayment - interestPayment;
+
     return {
-      month: month.toString(),
+      week: `W${week}`,
       principal: parseFloat(principalPayment.toFixed(2)),
       interest: parseFloat(interestPayment.toFixed(2)),
     };
@@ -86,13 +94,13 @@ export function RequestLoanDialog({ children }: { children: React.ReactNode }) {
   };
 
   const handleDurationChange = (value: number[]) => {
-    setDuration(value[0]);
+    setDurationInWeeks(value[0]);
   };
 
   const handleSubmit = async () => {
     setLoading(true);
     try {
-      const result = await submitLoanRequest({ amount, duration });
+      const result = await submitLoanRequest({ amount, durationInWeeks });
       toast({
         title: result.success ? 'Success!' : 'Error',
         description: result.message,
@@ -127,12 +135,12 @@ export function RequestLoanDialog({ children }: { children: React.ReactNode }) {
             <div className="flex justify-between">
               <Label htmlFor="amount">Amount</Label>
               <span className="font-semibold">
-                ${amount.toLocaleString()}
+                ZMW {amount.toLocaleString()}
               </span>
             </div>
             <Slider
               id="amount"
-              min={500}
+              min={200}
               max={50000}
               step={100}
               value={[amount]}
@@ -141,31 +149,35 @@ export function RequestLoanDialog({ children }: { children: React.ReactNode }) {
           </div>
           <div className="space-y-2">
             <div className="flex justify-between">
-              <Label htmlFor="duration">Duration (Months)</Label>
-              <span className="font-semibold">{duration}</span>
+              <Label htmlFor="duration">Duration (Weeks)</Label>
+              <span className="font-semibold">{durationInWeeks}</span>
             </div>
             <Slider
               id="duration"
-              min={6}
-              max={72}
+              min={1}
+              max={16}
               step={1}
-              value={[duration]}
+              value={[durationInWeeks]}
               onValueChange={handleDurationChange}
             />
           </div>
           <div className="mt-4 rounded-lg border bg-muted p-4 space-y-2">
             <h4 className="font-semibold text-sm">Loan Estimate</h4>
             <div className="flex justify-between text-sm">
-                <span className="text-muted-foreground">Monthly Payment</span>
-                <span>${monthlyPayment.toFixed(2)}</span>
+                <span className="text-muted-foreground">Weekly Payment</span>
+                <span>ZMW {weeklyPayment.toFixed(2)}</span>
             </div>
             <div className="flex justify-between text-sm">
                 <span className="text-muted-foreground">Total Repayment</span>
-                <span>${totalRepayment.toFixed(2)}</span>
+                <span>ZMW {totalRepayment.toFixed(2)}</span>
             </div>
              <div className="flex justify-between text-sm">
                 <span className="text-muted-foreground">Interest Rate</span>
-                <span>{(INTEREST_RATE * 100).toFixed(1)}% APR</span>
+                <span>{(interestRate * 100).toFixed(2)}%</span>
+            </div>
+             <div className="flex justify-between text-sm">
+                <span className="text-muted-foreground">Total Interest</span>
+                <span>ZMW {totalInterest.toFixed(2)}</span>
             </div>
           </div>
            <div className="mt-4 rounded-lg border bg-muted p-4">
@@ -174,14 +186,9 @@ export function RequestLoanDialog({ children }: { children: React.ReactNode }) {
               <ChartContainer config={chartConfig} className="min-h-[200px] w-full">
                 <BarChart accessibilityLayer data={amortizationData} stackOffset="sign" margin={{ top: 5, right: 20, left: -20, bottom: 5 }}>
                   <CartesianGrid vertical={false} />
-                  <XAxis dataKey="month" tickLine={false} axisLine={false} tickMargin={8}
-                    tickFormatter={(value, index) => {
-                      if (duration <= 12) return value;
-                      // Show ticks for every year
-                      return (index + 1) % 12 === 0 ? `Yr ${Math.floor((index + 1) / 12)}` : "";
-                    }}/>
-                  <YAxis type="number" domain={['dataMin', 'auto']} tickFormatter={(value) => `$${value}`} />
-                  <ChartTooltip content={<ChartTooltipContent />} />
+                  <XAxis dataKey="week" tickLine={false} axisLine={false} tickMargin={8} />
+                  <YAxis type="number" domain={['auto', 'auto']} tickFormatter={(value) => `ZMW ${value}`} />
+                  <ChartTooltip content={<ChartTooltipContent formatter={(value) => `ZMW ${value}`}/>} />
                   <Bar dataKey="principal" fill="var(--color-principal)" stackId="a" radius={[4, 4, 0, 0]} />
                   <Bar dataKey="interest" fill="var(--color-interest)" stackId="a" radius={[0, 0, 0, 0]} />
                 </BarChart>
@@ -196,7 +203,7 @@ export function RequestLoanDialog({ children }: { children: React.ReactNode }) {
             disabled={loading}
           >
             {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-            Submit Request
+            Finalize Request
           </Button>
         </DialogFooter>
       </DialogContent>

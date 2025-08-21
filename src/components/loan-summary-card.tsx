@@ -25,15 +25,15 @@ export default function LoanSummaryCard() {
       </CardHeader>
       <CardContent>
         <div className="text-2xl font-bold">
-          ${outstandingBalance.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+          ZMW {outstandingBalance.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
         </div>
         <p className="text-xs text-muted-foreground">
-          Remaining balance of ${totalLoanAmount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+          Remaining balance of ZMW {totalLoanAmount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
         </p>
         <div className="mt-4">
           <Progress value={progressPercentage} className="h-2" />
           <div className="mt-2 flex justify-between text-xs text-muted-foreground">
-            <span>Paid: ${amountPaid.toLocaleString()}</span>
+            <span>Paid: ZMW {amountPaid.toLocaleString()}</span>
             <span>{progressPercentage.toFixed(0)}% Complete</span>
           </div>
         </div>
@@ -43,7 +43,7 @@ export default function LoanSummaryCard() {
               <DollarSign className="size-4 text-primary" />
               <span>Next Payment</span>
             </div>
-            <p className="text-lg font-semibold">$498.30</p>
+            <p className="text-lg font-semibold">ZMW 498.30</p>
           </div>
           <div>
             <div className="flex items-center gap-2 text-sm font-medium">

@@ -5,6 +5,7 @@ import {
   CreditCard,
   Settings,
   BadgeDollarSign,
+  BookOpen,
 } from 'lucide-react';
 import {
   SidebarHeader,
@@ -15,8 +16,11 @@ import {
   SidebarFooter,
 } from '@/components/ui/sidebar';
 import FiduciaLendLogo from './fiducia-lend-logo';
+import { usePathname } from 'next/navigation';
 
 export default function SidebarNav() {
+  const pathname = usePathname();
+
   return (
     <>
       <SidebarHeader>
@@ -30,27 +34,33 @@ export default function SidebarNav() {
       <SidebarContent>
         <SidebarMenu>
           <SidebarMenuItem>
-            <SidebarMenuButton href="#" isActive>
+            <SidebarMenuButton href="/" isActive={pathname === '/'}>
               <Home />
               Dashboard
             </SidebarMenuButton>
           </SidebarMenuItem>
           <SidebarMenuItem>
-            <SidebarMenuButton href="#">
+            <SidebarMenuButton href="/loans" isActive={pathname === '/loans'}>
               <FileText />
               Loans
             </SidebarMenuButton>
           </SidebarMenuItem>
           <SidebarMenuItem>
-            <SidebarMenuButton href="#">
+            <SidebarMenuButton href="/payments" isActive={pathname === '/payments'}>
               <CreditCard />
               Payments
             </SidebarMenuButton>
           </SidebarMenuItem>
           <SidebarMenuItem>
-            <SidebarMenuButton href="#">
+            <SidebarMenuButton href="/offers" isActive={pathname === '/offers'}>
               <BadgeDollarSign />
               Offers
+            </SidebarMenuButton>
+          </SidebarMenuItem>
+          <SidebarMenuItem>
+            <SidebarMenuButton href="/articles" isActive={pathname === '/articles'}>
+              <BookOpen />
+              Articles
             </SidebarMenuButton>
           </SidebarMenuItem>
         </SidebarMenu>

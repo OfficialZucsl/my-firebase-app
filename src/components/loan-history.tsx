@@ -19,25 +19,25 @@ const mockLoans: Loan[] = [
     id: 'LN75643',
     amount: 5000,
     interestRate: 5.5,
-    term: 24,
+    termInWeeks: 8,
     status: 'Active',
     nextPaymentDate: '2024-08-15',
-    nextPaymentAmount: 220.5,
+    nextPaymentAmount: 650.5,
   },
   {
     id: 'LN62841',
     amount: 15000,
     interestRate: 4.2,
-    term: 60,
+    termInWeeks: 16,
     status: 'Active',
     nextPaymentDate: '2024-08-20',
-    nextPaymentAmount: 277.8,
+    nextPaymentAmount: 1005.8,
   },
   {
     id: 'LN45239',
     amount: 2500,
     interestRate: 7.0,
-    term: 12,
+    termInWeeks: 4,
     status: 'Paid Off',
     nextPaymentDate: 'N/A',
     nextPaymentAmount: 0,
@@ -46,10 +46,10 @@ const mockLoans: Loan[] = [
     id: 'LN98123',
     amount: 1000,
     interestRate: 8.1,
-    term: 6,
+    termInWeeks: 2,
     status: 'Overdue',
     nextPaymentDate: '2024-07-10',
-    nextPaymentAmount: 170.6,
+    nextPaymentAmount: 550.6,
   },
 ];
 
@@ -75,7 +75,7 @@ export default function LoanHistory() {
               <TableRow key={loan.id}>
                 <TableCell className="font-medium">{loan.id}</TableCell>
                 <TableCell className="text-right">
-                  ${loan.amount.toLocaleString()}
+                  ZMW {loan.amount.toLocaleString()}
                 </TableCell>
                 <TableCell>
                   <Badge
