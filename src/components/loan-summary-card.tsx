@@ -1,6 +1,8 @@
+
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { DollarSign, Calendar, TrendingUp } from 'lucide-react';
+import { RequestLoanDialog } from './request-loan-dialog';
 
 export default function LoanSummaryCard() {
   return (
@@ -28,7 +30,9 @@ export default function LoanSummaryCard() {
             <p className="text-lg font-semibold">Aug 15, 2024</p>
           </div>
         </div>
-        <Button className="mt-6 w-full">Request New Loan</Button>
+        <RequestLoanDialog>
+          <Button className="mt-6 w-full">Request New Loan</Button>
+        </RequestLoanDialog>
       </CardContent>
     </Card>
   );
