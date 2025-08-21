@@ -13,3 +13,14 @@ export interface LoanRequest {
   amount: number;
   durationInWeeks: number;
 }
+
+export type TransactionType = 'income' | 'expense';
+
+export interface PersonalTransaction {
+  id: string;
+  type: TransactionType;
+  amount: number;
+  description: string;
+  category: string;
+  date: string;
+}

@@ -8,47 +8,9 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 import { ArrowDownLeft, ArrowUpRight } from 'lucide-react';
-
-const mockTransactions = [
-  {
-    id: 'TRN-001',
-    type: 'loan_disbursal',
-    amount: 5000,
-    description: 'Loan disbursement for LN75643',
-    date: '2024-07-01',
-  },
-  {
-    id: 'TRN-002',
-    type: 'repayment',
-    amount: 650.50,
-    description: 'Payment for loan LN75643',
-    date: '2024-07-15',
-  },
-  {
-    id: 'TRN-003',
-    type: 'income',
-    amount: 2500,
-    description: 'Monthly Salary',
-    date: '2024-07-25',
-  },
-  {
-    id: 'TRN-004',
-    type: 'expense',
-    amount: 300,
-    description: 'Groceries',
-    date: '2024-07-26',
-  },
-   {
-    id: 'TRN-005',
-    type: 'repayment',
-    amount: 1005.80,
-    description: 'Payment for loan LN62841',
-    date: '2024-07-20',
-  },
-];
+import type { PersonalTransaction } from '@/lib/types';
 
 const transactionTypeDetails = {
     income: {
@@ -61,24 +23,13 @@ const transactionTypeDetails = {
         icon: ArrowUpRight,
         color: "text-red-500",
     },
-    repayment: {
-        label: "Repayment",
-        icon: ArrowUpRight,
-        color: "text-red-500",
-    },
-    loan_disbursal: {
-        label: "Loan Disbursal",
-        icon: ArrowDownLeft,
-        color: "text-green-500",
-    }
 }
 
-
-export default function TransactionHistory() {
+export default function PersonalTransactionsTable({ transactions }: { transactions: PersonalTransaction[] }) {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Transaction History</CardTitle>
+        <CardTitle>Recent Transactions</CardTitle>
       </CardHeader>
       <CardContent>
         <Table>
@@ -86,12 +37,13 @@ export default function TransactionHistory() {
             <TableRow>
               <TableHead>Type</TableHead>
               <TableHead>Description</TableHead>
+              <TableHead>Category</TableHead>
               <TableHead>Date</TableHead>
               <TableHead className="text-right">Amount</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
-            {mockTransactions.map((transaction) => {
+            {transactions.map((transaction) => {
                 const details = transactionTypeDetails[transaction.type as keyof typeof transactionTypeDetails];
                 const Icon = details.icon;
               return (
@@ -105,9 +57,10 @@ export default function TransactionHistory() {
                     </div>
                 </TableCell>
                 <TableCell>{transaction.description}</TableCell>
+                <TableCell><span className="text-xs font-semibold uppercase">{transaction.category}</span></TableCell>
                 <TableCell>{transaction.date}</TableCell>
                 <TableCell className={cn("text-right font-semibold", details.color)}>
-                    {transaction.type === 'income' || transaction.type === 'loan_disbursal' ? '+' : '-'}
+                    {transaction.type === 'income' ? '+' : '-'}
                     ZMW {transaction.amount.toFixed(2)}
                 </TableCell>
               </TableRow>
