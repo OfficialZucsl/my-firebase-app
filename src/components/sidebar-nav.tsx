@@ -17,6 +17,7 @@ import {
 } from '@/components/ui/sidebar';
 import FiduciaLendLogo from './fiducia-lend-logo';
 import { usePathname } from 'next/navigation';
+import Link from 'next/link';
 
 export default function SidebarNav() {
   const pathname = usePathname();
@@ -34,41 +35,61 @@ export default function SidebarNav() {
       <SidebarContent>
         <SidebarMenu>
           <SidebarMenuItem>
-            <SidebarMenuButton href="/" isActive={pathname === '/'}>
-              <Home />
-              Dashboard
-            </SidebarMenuButton>
+            <Link href="/" passHref>
+              <SidebarMenuButton asChild isActive={pathname === '/'}>
+                <span>
+                  <Home />
+                  Dashboard
+                </span>
+              </SidebarMenuButton>
+            </Link>
           </SidebarMenuItem>
           <SidebarMenuItem>
-            <SidebarMenuButton href="/loans" isActive={pathname === '/loans'}>
-              <FileText />
-              Loans
-            </SidebarMenuButton>
+            <Link href="/loans" passHref>
+              <SidebarMenuButton asChild isActive={pathname === '/loans'}>
+                <span>
+                  <FileText />
+                  Loans
+                </span>
+              </SidebarMenuButton>
+            </Link>
           </SidebarMenuItem>
           <SidebarMenuItem>
-            <SidebarMenuButton href="/payments" isActive={pathname === '/payments'}>
-              <CreditCard />
-              Payments
-            </SidebarMenuButton>
+            <Link href="/payments" passHref>
+              <SidebarMenuButton asChild isActive={pathname === '/payments'}>
+                <span>
+                  <CreditCard />
+                  Payments
+                </span>
+              </SidebarMenuButton>
+            </Link>
           </SidebarMenuItem>
           <SidebarMenuItem>
-            <SidebarMenuButton href="/offers" isActive={pathname === '/offers'}>
-              <BadgeDollarSign />
-              Offers
-            </SidebarMenuButton>
+            <Link href="/offers" passHref>
+              <SidebarMenuButton asChild isActive={pathname === '/offers'}>
+                <span>
+                  <BadgeDollarSign />
+                  Offers
+                </span>
+              </SidebarMenuButton>
+            </Link>
           </SidebarMenuItem>
           <SidebarMenuItem>
-            <SidebarMenuButton href="/articles" isActive={pathname === '/articles'}>
-              <BookOpen />
-              Articles
-            </SidebarMenuButton>
+            <Link href="/articles" passHref>
+              <SidebarMenuButton asChild isActive={pathname === '/articles'}>
+                <span>
+                  <BookOpen />
+                  Articles
+                </span>
+              </SidebarMenuButton>
+            </Link>
           </SidebarMenuItem>
         </SidebarMenu>
       </SidebarContent>
       <SidebarFooter>
         <SidebarMenu>
           <SidebarMenuItem>
-            <SidebarMenuButton href="#">
+            <SidebarMenuButton>
               <Settings />
               Settings
             </SidebarMenuButton>
