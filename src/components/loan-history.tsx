@@ -1,3 +1,6 @@
+
+'use client';
+
 import {
   Table,
   TableBody,
@@ -14,46 +17,13 @@ import { PaymentDialog } from './payment-dialog';
 import { cn } from '@/lib/utils';
 import { ArrowUpDown } from 'lucide-react';
 
-const mockLoans: Loan[] = [
-  {
-    id: 'LN75643',
-    amount: 5000,
-    interestRate: 5.5,
-    termInWeeks: 8,
-    status: 'Active',
-    nextPaymentDate: '2024-08-15',
-    nextPaymentAmount: 650.5,
-  },
-  {
-    id: 'LN62841',
-    amount: 15000,
-    interestRate: 4.2,
-    termInWeeks: 16,
-    status: 'Active',
-    nextPaymentDate: '2024-08-20',
-    nextPaymentAmount: 1005.8,
-  },
-  {
-    id: 'LN45239',
-    amount: 2500,
-    interestRate: 7.0,
-    termInWeeks: 4,
-    status: 'Paid Off',
-    nextPaymentDate: 'N/A',
-    nextPaymentAmount: 0,
-  },
-  {
-    id: 'LN98123',
-    amount: 1000,
-    interestRate: 8.1,
-    termInWeeks: 2,
-    status: 'Overdue',
-    nextPaymentDate: '2024-07-10',
-    nextPaymentAmount: 550.6,
-  },
-];
-
-export default function LoanHistory() {
+export default function LoanHistory({
+  loans,
+  actions,
+}: {
+  loans: Loan[];
+  actions?: (loan: Loan) => React.ReactNode;
+}) {
   return (
     <Card>
       <CardHeader>
@@ -63,15 +33,30 @@ export default function LoanHistory() {
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead><Button variant="ghost" size="sm"><ArrowUpDown className="mr-2 h-4 w-4" />ID</Button></TableHead>
-              <TableHead className="text-right"><Button variant="ghost" size="sm"><ArrowUpDown className="mr-2 h-4 w-4" />Amount</Button></TableHead>
-              <TableHead><Button variant="ghost" size="sm"><ArrowUpDown className="mr-2 h-4 w-4" />Status</Button></TableHead>
+              <TableHead>
+                <Button variant="ghost" size="sm">
+                  <ArrowUpDown className="mr-2 h-4 w-4" />
+                  ID
+                </Button>
+              </TableHead>
+              <TableHead className="text-right">
+                <Button variant="ghost" size="sm">
+                  <ArrowUpDown className="mr-2 h-4 w-4" />
+                  Amount
+                </Button>
+              </TableHead>
+              <TableHead>
+                <Button variant="ghost" size="sm">
+                  <ArrowUpDown className="mr-2 h-4 w-4" />
+                  Status
+                </Button>
+              </TableHead>
               <TableHead>Next Payment</TableHead>
               <TableHead className="text-right">Action</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
-            {mockLoans.map((loan) => (
+            {loans.map((loan) => (
               <TableRow key={loan.id}>
                 <TableCell className="font-medium">{loan.id}</TableCell>
                 <TableCell className="text-right">
@@ -80,23 +65,30 @@ export default function LoanHistory() {
                 <TableCell>
                   <Badge
                     className={cn({
-                      'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400': loan.status === 'Paid Off',
-                      'bg-blue-100 text-blue-800 dark:bg-blue-900/20 dark:text-blue-400': loan.status === 'Active',
-                      'bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-400': loan.status === 'Overdue',
+                      'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400':
+                        loan.status === 'Paid Off',
+                      'bg-blue-100 text-blue-800 dark:bg-blue-900/20 dark:text-blue-400':
+                        loan.status === 'Active',
+                      'bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-400':
+                        loan.status === 'Overdue' || loan.status === 'Rejected',
+                      'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/20 dark:text-yellow-400':
+                        loan.status === 'Pending',
                     })}
                   >
                     {loan.status}
                   </Badge>
                 </TableCell>
-                <TableCell>
-                    {loan.nextPaymentDate}
-                </TableCell>
+                <TableCell>{loan.nextPaymentDate}</TableCell>
                 <TableCell className="text-right">
-                  {loan.status !== 'Paid Off' && (
-                    <PaymentDialog loan={loan}>
-                      <Button size="sm">Make Payment</Button>
-                    </PaymentDialog>
-                  )}
+                  {actions
+                    ? actions(loan)
+                    : loan.status !== 'Paid Off' &&
+                      loan.status !== 'Pending' &&
+                      loan.status !== 'Rejected' && (
+                        <PaymentDialog loan={loan}>
+                          <Button size="sm">Make Payment</Button>
+                        </PaymentDialog>
+                      )}
                 </TableCell>
               </TableRow>
             ))}

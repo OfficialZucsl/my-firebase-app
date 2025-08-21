@@ -31,6 +31,7 @@ import {
   ChartTooltipContent,
 } from '@/components/ui/chart';
 import { ScrollArea } from './ui/scroll-area';
+import { useLoanStore } from '@/hooks/use-loan-store';
 
 const chartConfig = {
   principal: {
@@ -50,13 +51,8 @@ const calculateInterestRate = (durationInWeeks: number) => {
   if (durationInWeeks === 3) return 0.25;
   if (durationInWeeks >= 4) {
     // For 4 weeks, it's 0.30. For longer durations, we apply compound interest.
-    // This is a simplified compound interest formula for demonstration.
-    // P(1 + r/n)^(nt)
-    // Let's simplify for this case: base rate for 4 weeks is 30%.
-    // For each additional 4-week period, we can compound.
     const baseRate = 0.30;
     const periods = Math.ceil(durationInWeeks / 4);
-    // Simplified: (1 + R)^n - 1
     return Math.pow(1 + baseRate, periods) - 1;
   }
   return 0.15; // Default for less than 1 week (should not happen with slider min)
@@ -69,6 +65,7 @@ export function RequestLoanDialog({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(false);
   const [open, setOpen] = useState(false);
   const { toast } = useToast();
+  const addLoan = useLoanStore(state => state.addLoan);
 
   const interestRate = calculateInterestRate(durationInWeeks);
   const totalInterest = amount * interestRate;
@@ -77,7 +74,6 @@ export function RequestLoanDialog({ children }: { children: React.ReactNode }) {
 
   const amortizationData = Array.from({ length: durationInWeeks }, (_, i) => {
     const week = i + 1;
-    let remainingBalance = amount;
     
     // Simplified amortization for visualization
     const interestPayment = totalInterest / durationInWeeks;
@@ -101,14 +97,20 @@ export function RequestLoanDialog({ children }: { children: React.ReactNode }) {
   const handleSubmit = async () => {
     setLoading(true);
     try {
-      const result = await submitLoanRequest({ amount, durationInWeeks });
-      toast({
-        title: result.success ? 'Success!' : 'Error',
-        description: result.message,
-        variant: result.success ? 'default' : 'destructive',
-      });
+      const result = await submitLoanRequest({ amount, durationInWeeks, weeklyPayment });
       if (result.success) {
+        addLoan(result.newLoan);
+        toast({
+          title: 'Success!',
+          description: result.message,
+        });
         setOpen(false);
+      } else {
+         toast({
+          title: 'Error',
+          description: result.message,
+          variant: 'destructive',
+        });
       }
     } catch (error) {
       toast({

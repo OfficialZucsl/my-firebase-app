@@ -4,7 +4,7 @@ export interface Loan {
   amount: number;
   interestRate: number;
   termInWeeks: number;
-  status: 'Active' | 'Paid Off' | 'Overdue';
+  status: 'Active' | 'Paid Off' | 'Overdue' | 'Pending' | 'Rejected';
   nextPaymentDate: string;
   nextPaymentAmount: number;
 }

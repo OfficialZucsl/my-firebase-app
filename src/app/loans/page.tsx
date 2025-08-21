@@ -1,3 +1,5 @@
+
+'use client';
 import {
   SidebarProvider,
   Sidebar,
@@ -6,9 +8,51 @@ import {
 import Header from '@/components/header';
 import SidebarNav from '@/components/sidebar-nav';
 import LoanHistory from '@/components/loan-history';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { useLoanStore } from '@/hooks/use-loan-store';
+import { Button } from '@/components/ui/button';
+import { updateLoanStatus } from '../actions';
+import { useToast } from '@/hooks/use-toast';
 
 export default function LoansPage() {
+  const { loans, updateLoan } = useLoanStore();
+  const { toast } = useToast();
+
+  const handleUpdateStatus = async (id: string, status: 'Active' | 'Rejected') => {
+    try {
+      const result = await updateLoanStatus(id, status);
+      if (result.success) {
+        updateLoan(id, result.updatedLoan);
+        toast({
+          title: 'Success!',
+          description: `Loan #${id} has been ${status === 'Active' ? 'approved' : 'declined'}.`,
+        });
+      }
+    } catch (error) {
+       toast({
+          title: 'Error',
+          description: 'Failed to update loan status.',
+          variant: 'destructive',
+        });
+    }
+  };
+
+
+  const loanActions = (loan: any) => {
+    if (loan.status === 'Pending') {
+      return (
+        <div className="flex gap-2">
+          <Button size="sm" variant="outline" onClick={() => handleUpdateStatus(loan.id, 'Active')}>
+            Approve
+          </Button>
+          <Button size="sm" variant="destructive" onClick={() => handleUpdateStatus(loan.id, 'Rejected')}>
+            Decline
+          </Button>
+        </div>
+      );
+    }
+    return null;
+  };
+
   return (
     <SidebarProvider>
       <Sidebar>
@@ -20,7 +64,7 @@ export default function LoansPage() {
           <main className="flex-1 bg-background p-4 md:p-6 lg:p-8">
             <div className="space-y-4">
               <h1 className="text-2xl font-semibold">My Loans</h1>
-              <LoanHistory />
+              <LoanHistory loans={loans} actions={loanActions} />
             </div>
           </main>
         </div>
