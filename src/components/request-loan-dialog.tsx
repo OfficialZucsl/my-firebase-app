@@ -30,6 +30,7 @@ import {
   ChartTooltip,
   ChartTooltipContent,
 } from '@/components/ui/chart';
+import { ScrollArea } from './ui/scroll-area';
 
 const chartConfig = {
   principal: {
@@ -130,72 +131,74 @@ export function RequestLoanDialog({ children }: { children: React.ReactNode }) {
             Adjust the sliders to select your desired loan amount and duration.
           </DialogDescription>
         </DialogHeader>
-        <div className="grid gap-6 py-4">
-          <div className="space-y-2">
-            <div className="flex justify-between">
-              <Label htmlFor="amount">Amount</Label>
-              <span className="font-semibold">
-                ZMW {amount.toLocaleString()}
-              </span>
+        <ScrollArea className="h-[60vh] pr-6">
+          <div className="grid gap-6 py-4">
+            <div className="space-y-2">
+              <div className="flex justify-between">
+                <Label htmlFor="amount">Amount</Label>
+                <span className="font-semibold">
+                  ZMW {amount.toLocaleString()}
+                </span>
+              </div>
+              <Slider
+                id="amount"
+                min={200}
+                max={50000}
+                step={100}
+                value={[amount]}
+                onValueChange={handleAmountChange}
+              />
             </div>
-            <Slider
-              id="amount"
-              min={200}
-              max={50000}
-              step={100}
-              value={[amount]}
-              onValueChange={handleAmountChange}
-            />
+            <div className="space-y-2">
+              <div className="flex justify-between">
+                <Label htmlFor="duration">Duration (Weeks)</Label>
+                <span className="font-semibold">{durationInWeeks}</span>
+              </div>
+              <Slider
+                id="duration"
+                min={1}
+                max={16}
+                step={1}
+                value={[durationInWeeks]}
+                onValueChange={handleDurationChange}
+              />
+            </div>
+            <div className="mt-4 rounded-lg border bg-muted p-4 space-y-2">
+              <h4 className="font-semibold text-sm">Loan Estimate</h4>
+              <div className="flex justify-between text-sm">
+                  <span className="text-muted-foreground">Weekly Payment</span>
+                  <span>ZMW {weeklyPayment.toFixed(2)}</span>
+              </div>
+              <div className="flex justify-between text-sm">
+                  <span className="text-muted-foreground">Total Repayment</span>
+                  <span>ZMW {totalRepayment.toFixed(2)}</span>
+              </div>
+               <div className="flex justify-between text-sm">
+                  <span className="text-muted-foreground">Interest Rate</span>
+                  <span>{(interestRate * 100).toFixed(2)}%</span>
+              </div>
+               <div className="flex justify-between text-sm">
+                  <span className="text-muted-foreground">Total Interest</span>
+                  <span>ZMW {totalInterest.toFixed(2)}</span>
+              </div>
+            </div>
+             <div className="mt-4 rounded-lg border bg-muted p-4">
+               <h4 className="font-semibold text-sm mb-2">Repayment Schedule</h4>
+               <div className="h-[200px] w-full">
+                <ChartContainer config={chartConfig} className="min-h-[200px] w-full">
+                  <BarChart accessibilityLayer data={amortizationData} stackOffset="sign" margin={{ top: 5, right: 20, left: -20, bottom: 5 }}>
+                    <CartesianGrid vertical={false} />
+                    <XAxis dataKey="week" tickLine={false} axisLine={false} tickMargin={8} />
+                    <YAxis type="number" domain={['auto', 'auto']} tickFormatter={(value) => `ZMW ${value}`} />
+                    <ChartTooltip content={<ChartTooltipContent formatter={(value) => `ZMW ${value}`}/>} />
+                    <Bar dataKey="principal" fill="var(--color-principal)" stackId="a" radius={[4, 4, 0, 0]} />
+                    <Bar dataKey="interest" fill="var(--color-interest)" stackId="a" radius={[0, 0, 0, 0]} />
+                  </BarChart>
+                </ChartContainer>
+              </div>
+             </div>
           </div>
-          <div className="space-y-2">
-            <div className="flex justify-between">
-              <Label htmlFor="duration">Duration (Weeks)</Label>
-              <span className="font-semibold">{durationInWeeks}</span>
-            </div>
-            <Slider
-              id="duration"
-              min={1}
-              max={16}
-              step={1}
-              value={[durationInWeeks]}
-              onValueChange={handleDurationChange}
-            />
-          </div>
-          <div className="mt-4 rounded-lg border bg-muted p-4 space-y-2">
-            <h4 className="font-semibold text-sm">Loan Estimate</h4>
-            <div className="flex justify-between text-sm">
-                <span className="text-muted-foreground">Weekly Payment</span>
-                <span>ZMW {weeklyPayment.toFixed(2)}</span>
-            </div>
-            <div className="flex justify-between text-sm">
-                <span className="text-muted-foreground">Total Repayment</span>
-                <span>ZMW {totalRepayment.toFixed(2)}</span>
-            </div>
-             <div className="flex justify-between text-sm">
-                <span className="text-muted-foreground">Interest Rate</span>
-                <span>{(interestRate * 100).toFixed(2)}%</span>
-            </div>
-             <div className="flex justify-between text-sm">
-                <span className="text-muted-foreground">Total Interest</span>
-                <span>ZMW {totalInterest.toFixed(2)}</span>
-            </div>
-          </div>
-           <div className="mt-4 rounded-lg border bg-muted p-4">
-             <h4 className="font-semibold text-sm mb-2">Repayment Schedule</h4>
-             <div className="h-[200px] w-full">
-              <ChartContainer config={chartConfig} className="min-h-[200px] w-full">
-                <BarChart accessibilityLayer data={amortizationData} stackOffset="sign" margin={{ top: 5, right: 20, left: -20, bottom: 5 }}>
-                  <CartesianGrid vertical={false} />
-                  <XAxis dataKey="week" tickLine={false} axisLine={false} tickMargin={8} />
-                  <YAxis type="number" domain={['auto', 'auto']} tickFormatter={(value) => `ZMW ${value}`} />
-                  <ChartTooltip content={<ChartTooltipContent formatter={(value) => `ZMW ${value}`}/>} />
-                  <Bar dataKey="principal" fill="var(--color-principal)" stackId="a" radius={[4, 4, 0, 0]} />
-                  <Bar dataKey="interest" fill="var(--color-interest)" stackId="a" radius={[0, 0, 0, 0]} />
-                </BarChart>
-              </ChartContainer>
-            </div>
-           </div>
-        </div>
+        </ScrollArea>
         <DialogFooter>
           <Button
             type="submit"
@@ -203,7 +206,7 @@ export function RequestLoanDialog({ children }: { children: React.ReactNode }) {
             disabled={loading}
           >
             {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-            Finalize Request
+            Finalize Loan
           </Button>
         </DialogFooter>
       </DialogContent>
