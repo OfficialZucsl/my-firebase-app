@@ -1,3 +1,4 @@
+
 'use client';
 import {
   Home,
@@ -6,6 +7,7 @@ import {
   Settings,
   BadgeDollarSign,
   BookOpen,
+  ArrowRightLeft,
 } from 'lucide-react';
 import {
   SidebarHeader,
@@ -60,6 +62,16 @@ export default function SidebarNav() {
                 <span>
                   <CreditCard />
                   Payments
+                </span>
+              </SidebarMenuButton>
+            </Link>
+          </SidebarMenuItem>
+          <SidebarMenuItem>
+            <Link href="/transactions" passHref>
+              <SidebarMenuButton asChild isActive={pathname === '/transactions'}>
+                <span>
+                  <ArrowRightLeft />
+                  Transactions
                 </span>
               </SidebarMenuButton>
             </Link>
