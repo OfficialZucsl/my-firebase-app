@@ -8,6 +8,7 @@ import SidebarNav from '@/components/sidebar-nav';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import Image from 'next/image';
+import Link from 'next/link';
 import { getArticles } from '../actions';
 
 export default async function ArticlesPage() {
@@ -34,7 +35,7 @@ export default async function ArticlesPage() {
                         <Card key={article.id} className="flex flex-col">
                             <CardHeader className="p-0">
                                 <Image
-                                    src={article.imageUrl}
+                                    src={article.imageUrl!}
                                     alt={article.title}
                                     width={600}
                                     height={400}
@@ -50,7 +51,9 @@ export default async function ArticlesPage() {
                                 <div className="text-xs text-muted-foreground">
                                     By {article.author} on {article.createdAt}
                                 </div>
-                                <Button variant="outline" size="sm">Read More</Button>
+                                <Link href={`/articles/${article.id}`} passHref>
+                                  <Button variant="outline" size="sm">Read More</Button>
+                                </Link>
                             </CardFooter>
                         </Card>
                     ))

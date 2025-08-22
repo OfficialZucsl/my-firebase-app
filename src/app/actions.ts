@@ -9,7 +9,7 @@ import type { Loan, LoanRequest, Article } from '@/lib/types';
 import { useLoanStore } from '@/hooks/use-loan-store';
 import { addDays, format } from 'date-fns';
 import { db } from '@/lib/firebase';
-import { collection, getDocs, Timestamp } from 'firebase/firestore';
+import { collection, doc, getDoc, getDocs, Timestamp } from 'firebase/firestore';
 
 
 export async function getPersonalizedTips(
@@ -70,6 +70,7 @@ export async function getArticles(): Promise<Article[]> {
         title: data.title || 'Untitled',
         author: data.author || 'Unknown Author',
         excerpt: data.excerpt || '',
+        content: data.content || '',
         imageUrl: data.imageUrl || 'https://placehold.co/600x400.png',
         dataAiHint: data.dataAiHint || 'article image',
         createdAt,
@@ -79,5 +80,35 @@ export async function getArticles(): Promise<Article[]> {
   } catch (error) {
     console.error("Error fetching articles:", error);
     return [];
+  }
+}
+
+export async function getArticleById(id: string): Promise<Article | null> {
+  try {
+    const articleDocRef = doc(db, 'articles', id);
+    const articleSnapshot = await getDoc(articleDocRef);
+
+    if (!articleSnapshot.exists()) {
+      return null;
+    }
+
+    const data = articleSnapshot.data();
+    const createdAt = data.createdAt instanceof Timestamp 
+      ? data.createdAt.toDate().toISOString().split('T')[0] 
+      : new Date().toISOString().split('T')[0];
+
+    return {
+      id: articleSnapshot.id,
+      title: data.title || 'Untitled',
+      author: data.author || 'Unknown Author',
+      excerpt: data.excerpt || '',
+      content: data.content || 'No content available.',
+      imageUrl: data.imageUrl || 'https://placehold.co/1200x600.png',
+      dataAiHint: data.dataAiHint || 'article banner',
+      createdAt,
+    } as Article;
+  } catch (error) {
+    console.error("Error fetching article by ID:", error);
+    return null;
   }
 }

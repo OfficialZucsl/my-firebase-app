@@ -30,6 +30,7 @@ export interface Article {
   title: string;
   author: string;
   excerpt: string;
+  content: string;
   imageUrl?: string;
   dataAiHint?: string;
   createdAt: string;
