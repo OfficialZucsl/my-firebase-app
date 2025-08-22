@@ -5,9 +5,12 @@ import {
   generatePersonalizedTips,
   type GeneratePersonalizedTipsInput,
 } from '@/ai/flows/generate-personalized-tips';
-import type { Loan, LoanRequest } from '@/lib/types';
+import type { Loan, LoanRequest, Article } from '@/lib/types';
 import { useLoanStore } from '@/hooks/use-loan-store';
 import { addDays, format } from 'date-fns';
+import { db } from '@/lib/firebase';
+import { collection, getDocs, Timestamp } from 'firebase/firestore';
+
 
 export async function getPersonalizedTips(
   input: GeneratePersonalizedTipsInput
@@ -49,4 +52,32 @@ export async function updateLoanStatus(loanId: string, status: 'Active' | 'Rejec
     success: true,
     updatedLoan: updatedFields,
   };
+}
+
+export async function getArticles(): Promise<Article[]> {
+  try {
+    const articlesCollection = collection(db, 'articles');
+    const articleSnapshot = await getDocs(articlesCollection);
+    const articlesList = articleSnapshot.docs.map(doc => {
+      const data = doc.data();
+      // Ensure createdAt is converted correctly
+      const createdAt = data.createdAt instanceof Timestamp 
+        ? data.createdAt.toDate().toISOString().split('T')[0] 
+        : new Date().toISOString().split('T')[0];
+
+      return {
+        id: doc.id,
+        title: data.title || 'Untitled',
+        author: data.author || 'Unknown Author',
+        excerpt: data.excerpt || '',
+        imageUrl: data.imageUrl || 'https://placehold.co/600x400.png',
+        dataAiHint: data.dataAiHint || 'article image',
+        createdAt,
+      } as Article;
+    });
+    return articlesList;
+  } catch (error) {
+    console.error("Error fetching articles:", error);
+    return [];
+  }
 }

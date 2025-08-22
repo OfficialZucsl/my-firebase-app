@@ -24,3 +24,13 @@ export interface PersonalTransaction {
   category: string;
   date: string;
 }
+
+export interface Article {
+  id: string;
+  title: string;
+  author: string;
+  excerpt: string;
+  imageUrl: string;
+  dataAiHint: string;
+  createdAt: string;
+}
