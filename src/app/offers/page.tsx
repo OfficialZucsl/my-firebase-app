@@ -1,4 +1,6 @@
 
+'use client';
+
 import {
   SidebarProvider,
   Sidebar,
@@ -9,9 +11,27 @@ import SidebarNav from '@/components/sidebar-nav';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { getOffers } from '../actions';
+import { RequestLoanDialog } from '@/components/request-loan-dialog';
+import type { Offer } from '@/lib/types';
+import { useEffect, useState } from 'react';
 
-export default async function OffersPage() {
-  const offers = await getOffers();
+export default function OffersPage() {
+  const [offers, setOffers] = useState<Offer[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    async function fetchOffers() {
+      try {
+        const fetchedOffers = await getOffers();
+        setOffers(fetchedOffers);
+      } catch (error) {
+        console.error("Failed to fetch offers:", error);
+      } finally {
+        setLoading(false);
+      }
+    }
+    fetchOffers();
+  }, []);
 
   return (
     <SidebarProvider>
@@ -25,7 +45,9 @@ export default async function OffersPage() {
             <div className="space-y-4">
               <h1 className="text-2xl font-semibold">Special Offers</h1>
               <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-                {offers.length > 0 ? (
+                {loading ? (
+                  <p className="text-muted-foreground col-span-full">Loading offers...</p>
+                ) : offers.length > 0 ? (
                   offers.map((offer) => (
                     <Card key={offer.id}>
                         <CardHeader>
@@ -36,7 +58,9 @@ export default async function OffersPage() {
                             <div className="font-semibold text-primary">{offer.discount}</div>
                         </CardContent>
                         <CardFooter>
-                            <Button>Claim Offer</Button>
+                            <RequestLoanDialog>
+                              <Button>Claim Offer</Button>
+                            </RequestLoanDialog>
                         </CardFooter>
                     </Card>
                   ))
