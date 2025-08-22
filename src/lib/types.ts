@@ -26,11 +26,11 @@ export interface PersonalTransaction {
 }
 
 export interface Article {
-  id: string;
+  id:string;
   title: string;
   author: string;
   excerpt: string;
-  imageUrl: string;
-  dataAiHint: string;
+  imageUrl?: string;
+  dataAiHint?: string;
   createdAt: string;
 }
