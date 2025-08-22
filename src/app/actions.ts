@@ -1,15 +1,16 @@
 
+
 'use server';
 
 import {
   generatePersonalizedTips,
   type GeneratePersonalizedTipsInput,
 } from '@/ai/flows/generate-personalized-tips';
-import type { Loan, LoanRequest, Article } from '@/lib/types';
+import type { Loan, LoanRequest, Article, Offer } from '@/lib/types';
 import { useLoanStore } from '@/hooks/use-loan-store';
 import { addDays, format } from 'date-fns';
 import { db } from '@/lib/firebase';
-import { collection, doc, getDoc, getDocs, Timestamp } from 'firebase/firestore';
+import { collection, doc, getDoc, getDocs, query, where, Timestamp } from 'firebase/firestore';
 
 
 export async function getPersonalizedTips(
@@ -110,5 +111,26 @@ export async function getArticleById(id: string): Promise<Article | null> {
   } catch (error) {
     console.error("Error fetching article by ID:", error);
     return null;
+  }
+}
+
+export async function getOffers(): Promise<Offer[]> {
+  try {
+    const offersCollection = collection(db, 'offers');
+    const q = query(offersCollection, where('isActive', '==', true));
+    const offerSnapshot = await getDocs(q);
+    const offersList = offerSnapshot.docs.map(doc => {
+      const data = doc.data();
+      return {
+        id: doc.id,
+        title: data.title || 'Untitled Offer',
+        description: data.description || '',
+        discount: data.discount || '',
+      } as Offer;
+    });
+    return offersList;
+  } catch (error) {
+    console.error("Error fetching offers:", error);
+    return [];
   }
 }

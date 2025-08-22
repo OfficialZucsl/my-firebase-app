@@ -1,4 +1,5 @@
 
+
 export interface Loan {
   id: string;
   amount: number;
@@ -34,4 +35,11 @@ export interface Article {
   imageUrl?: string;
   dataAiHint?: string;
   createdAt: string;
+}
+
+export interface Offer {
+  id: string;
+  title: string;
+  description: string;
+  discount: string;
 }
