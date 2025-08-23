@@ -16,16 +16,12 @@ import {
 } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
+import { getPayments } from '../actions';
 
 
-const mockPayments = [
-    {id: 'PAY-001', loanId: 'LN75643', amount: 650.50, date: '2024-07-15', status: 'successful'},
-    {id: 'PAY-002', loanId: 'LN62841', amount: 1005.80, date: '2024-07-20', status: 'successful'},
-    {id: 'PAY-003', loanId: 'LN98123', amount: 550.60, date: '2024-07-09', status: 'failed'},
-    {id: 'PAY-004', loanId: 'LN45239', amount: 250.00, date: '2024-06-30', status: 'successful'},
-]
+export default async function PaymentsPage() {
+  const payments = await getPayments();
 
-export default function PaymentsPage() {
   return (
     <SidebarProvider>
       <Sidebar>
@@ -51,24 +47,33 @@ export default function PaymentsPage() {
                             </TableRow>
                         </TableHeader>
                         <TableBody>
-                            {mockPayments.map(payment => (
-                                <TableRow key={payment.id}>
-                                    <TableCell className="font-medium">{payment.id}</TableCell>
-                                    <TableCell>{payment.loanId}</TableCell>
-                                    <TableCell>{payment.date}</TableCell>
-                                    <TableCell className="text-right">ZMW {payment.amount.toFixed(2)}</TableCell>
-                                    <TableCell>
-                                        <Badge
-                                            className={cn({
-                                            'bg-green-100 text-green-800': payment.status === 'successful',
-                                            'bg-red-100 text-red-800': payment.status === 'failed',
-                                            })}
-                                        >
-                                            {payment.status}
-                                        </Badge>
+                            {payments.length > 0 ? (
+                                payments.map(payment => (
+                                    <TableRow key={payment.id}>
+                                        <TableCell className="font-medium">{payment.id}</TableCell>
+                                        <TableCell>{payment.loanId}</TableCell>
+                                        <TableCell>{payment.date}</TableCell>
+                                        <TableCell className="text-right">ZMW {payment.amount.toFixed(2)}</TableCell>
+                                        <TableCell>
+                                            <Badge
+                                                className={cn({
+                                                'bg-green-100 text-green-800': payment.status === 'successful',
+                                                'bg-red-100 text-red-800': payment.status === 'failed',
+                                                'bg-yellow-100 text-yellow-800': payment.status === 'pending'
+                                                })}
+                                            >
+                                                {payment.status}
+                                            </Badge>
+                                        </TableCell>
+                                    </TableRow>
+                                ))
+                             ) : (
+                                <TableRow>
+                                    <TableCell colSpan={5} className="text-center text-muted-foreground">
+                                        No payment history found.
                                     </TableCell>
                                 </TableRow>
-                            ))}
+                            )}
                         </TableBody>
                    </Table>
                 </CardContent>

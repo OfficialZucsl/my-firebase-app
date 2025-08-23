@@ -43,3 +43,11 @@ export interface Offer {
   description: string;
   discount: string;
 }
+
+export interface Payment {
+  id: string;
+  loanId: string;
+  amount: number;
+  date: string;
+  status: 'successful' | 'failed' | 'pending';
+}

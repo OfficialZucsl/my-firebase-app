@@ -6,7 +6,7 @@ import {
   generatePersonalizedTips,
   type GeneratePersonalizedTipsInput,
 } from '@/ai/flows/generate-personalized-tips';
-import type { Loan, LoanRequest, Article, Offer, PersonalTransaction } from '@/lib/types';
+import type { Loan, LoanRequest, Article, Offer, PersonalTransaction, Payment } from '@/lib/types';
 import { useLoanStore } from '@/hooks/use-loan-store';
 import { addDays, format } from 'date-fns';
 import { db } from '@/lib/firebase';
@@ -179,4 +179,30 @@ export async function addTransaction(transaction: Omit<PersonalTransaction, 'id'
         console.error("Error adding transaction:", error);
         throw new Error("Failed to add transaction.");
     }
+}
+
+export async function getPayments(): Promise<Payment[]> {
+  try {
+    const paymentsCollection = collection(db, 'payments');
+    const q = query(paymentsCollection, orderBy('date', 'desc'));
+    const paymentSnapshot = await getDocs(q);
+    const paymentsList = paymentSnapshot.docs.map(doc => {
+      const data = doc.data();
+      const date = data.date instanceof Timestamp 
+        ? data.date.toDate().toISOString().split('T')[0] 
+        : new Date().toISOString().split('T')[0];
+      
+      return {
+        id: doc.id,
+        loanId: data.loanId || 'N/A',
+        amount: data.amount || 0,
+        status: data.status || 'pending',
+        date,
+      } as Payment;
+    });
+    return paymentsList;
+  } catch (error) {
+    console.error("Error fetching payments:", error);
+    return [];
+  }
 }
