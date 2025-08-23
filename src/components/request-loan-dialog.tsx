@@ -97,7 +97,7 @@ export function RequestLoanDialog({ children }: { children: React.ReactNode }) {
   const handleSubmit = async () => {
     setLoading(true);
     try {
-      const result = await submitLoanRequest({ amount, durationInWeeks, weeklyPayment });
+      const result = await submitLoanRequest({ amount, durationInWeeks, weeklyPayment, interestRate });
       if (result.success) {
         addLoan(result.newLoan);
         toast({
@@ -162,7 +162,7 @@ export function RequestLoanDialog({ children }: { children: React.ReactNode }) {
                 max={16}
                 step={1}
                 value={[durationInWeeks]}
-                onValueChange={handleDurationChange}
+                onValue-change={handleDurationChange}
               />
             </div>
             <div className="mt-4 rounded-lg border bg-muted p-4 space-y-2">

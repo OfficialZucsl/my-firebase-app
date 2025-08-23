@@ -12,20 +12,28 @@ import { useLoanStore } from '@/hooks/use-loan-store';
 import { Button } from '@/components/ui/button';
 import { updateLoanStatus } from '../actions';
 import { useToast } from '@/hooks/use-toast';
+import { useEffect } from 'react';
 
 export default function LoansPage() {
-  const { loans, updateLoan } = useLoanStore();
+  const { loans, updateLoan, fetchLoans, loading } = useLoanStore();
   const { toast } = useToast();
+
+  useEffect(() => {
+    fetchLoans();
+  }, [fetchLoans]);
+
 
   const handleUpdateStatus = async (id: string, status: 'Active' | 'Rejected') => {
     try {
       const result = await updateLoanStatus(id, status);
       if (result.success) {
-        updateLoan(id, result.updatedLoan);
+        updateLoan(id, result.updatedLoan!);
         toast({
           title: 'Success!',
           description: `Loan #${id} has been ${status === 'Active' ? 'approved' : 'declined'}.`,
         });
+      } else {
+        throw new Error('Failed to update loan status');
       }
     } catch (error) {
        toast({
@@ -64,7 +72,7 @@ export default function LoansPage() {
           <main className="flex-1 bg-background p-4 md:p-6 lg:p-8">
             <div className="space-y-4">
               <h1 className="text-2xl font-semibold">My Loans</h1>
-              <LoanHistory loans={loans} actions={loanActions} />
+              <LoanHistory loans={loans} actions={loanActions} loading={loading} />
             </div>
           </main>
         </div>

@@ -7,10 +7,9 @@ import {
   type GeneratePersonalizedTipsInput,
 } from '@/ai/flows/generate-personalized-tips';
 import type { Loan, LoanRequest, Article, Offer, PersonalTransaction, Payment } from '@/lib/types';
-import { useLoanStore } from '@/hooks/use-loan-store';
 import { addDays, format } from 'date-fns';
 import { db } from '@/lib/firebase';
-import { collection, doc, getDoc, getDocs, query, where, Timestamp, addDoc, orderBy } from 'firebase/firestore';
+import { collection, doc, getDoc, getDocs, query, where, Timestamp, addDoc, orderBy, updateDoc, serverTimestamp } from 'firebase/firestore';
 
 
 export async function getPersonalizedTips(
@@ -20,39 +19,95 @@ export async function getPersonalizedTips(
   return personalizedTips;
 }
 
-export async function submitLoanRequest(
-  loanDetails: LoanRequest & { weeklyPayment: number }
-): Promise<{ success: boolean; message: string; newLoan: Loan }> {
-  console.log('New loan request received:', loanDetails);
-
-  const newLoan: Loan = {
-    id: `LN${Math.floor(Math.random() * 90000) + 10000}`,
-    amount: loanDetails.amount,
-    interestRate: 0, // This should be calculated based on duration
-    termInWeeks: loanDetails.durationInWeeks,
-    status: 'Pending',
-    nextPaymentDate: 'N/A',
-    nextPaymentAmount: loanDetails.weeklyPayment, // Assuming weekly payments for now
-  };
-
-  return {
-    success: true,
-    message: `Your loan request for ZMW ${loanDetails.amount} has been submitted for review.`,
-    newLoan,
-  };
+export async function getLoans(): Promise<Loan[]> {
+    try {
+        const loansCollection = collection(db, 'loans');
+        const q = query(loansCollection, orderBy('createdAt', 'desc'));
+        const loanSnapshot = await getDocs(q);
+        const loansList = loanSnapshot.docs.map(doc => {
+            const data = doc.data();
+            return {
+                id: data.id, // Using the custom ID from the document
+                amount: data.amount || 0,
+                interestRate: data.interestRate || 0,
+                termInWeeks: data.termInWeeks || 0,
+                status: data.status || 'Pending',
+                nextPaymentDate: data.nextPaymentDate || 'N/A',
+                nextPaymentAmount: data.nextPaymentAmount || 0,
+            } as Loan;
+        });
+        return loansList;
+    } catch (error) {
+        console.error("Error fetching loans:", error);
+        return [];
+    }
 }
 
-export async function updateLoanStatus(loanId: string, status: 'Active' | 'Rejected'): Promise<{ success: boolean, updatedLoan: Partial<Loan> }> {
-  let updatedFields: Partial<Loan> = { status };
 
-  if (status === 'Active') {
-    updatedFields.nextPaymentDate = format(addDays(new Date(), 7), 'yyyy-MM-dd');
+export async function submitLoanRequest(
+  loanDetails: LoanRequest & { weeklyPayment: number, interestRate: number }
+): Promise<{ success: boolean; message: string; newLoan: Loan }> {
+  try {
+    const loanId = `LN${Math.floor(Math.random() * 90000) + 10000}`;
+    const newLoanData = {
+      id: loanId,
+      amount: loanDetails.amount,
+      interestRate: loanDetails.interestRate,
+      termInWeeks: loanDetails.durationInWeeks,
+      status: 'Pending',
+      nextPaymentDate: 'N/A',
+      nextPaymentAmount: loanDetails.weeklyPayment,
+      createdAt: serverTimestamp(),
+    };
+
+    // We use the custom loanId as the document ID for easy querying
+    await addDoc(collection(db, 'loans'), newLoanData);
+
+    const newLoan: Loan = {
+      ...newLoanData,
+      createdAt: undefined, // This is a server timestamp, not needed on client
+    };
+
+    return {
+      success: true,
+      message: `Your loan request for ZMW ${loanDetails.amount} has been submitted for review.`,
+      newLoan,
+    };
+  } catch (error) {
+    console.error("Error submitting loan request:", error);
+    return {
+      success: false,
+      message: 'Failed to submit loan request.',
+      newLoan: {} as Loan,
+    };
   }
+}
 
-  return {
-    success: true,
-    updatedLoan: updatedFields,
-  };
+export async function updateLoanStatus(loanId: string, status: 'Active' | 'Rejected'): Promise<{ success: boolean, updatedLoan?: Partial<Loan> }> {
+    try {
+        const q = query(collection(db, 'loans'), where('id', '==', loanId));
+        const querySnapshot = await getDocs(q);
+
+        if (querySnapshot.empty) {
+            throw new Error(`No loan found with ID: ${loanId}`);
+        }
+        
+        const loanDocRef = querySnapshot.docs[0].ref;
+
+        let updatedFields: Partial<Loan> = { status };
+
+        if (status === 'Active') {
+            updatedFields.nextPaymentDate = format(addDays(new Date(), 7), 'yyyy-MM-dd');
+        }
+
+        await updateDoc(loanDocRef, updatedFields);
+
+        return { success: true, updatedLoan: updatedFields };
+
+    } catch (error) {
+        console.error("Error updating loan status:", error);
+        return { success: false };
+    }
 }
 
 export async function getArticles(): Promise<Article[]> {
