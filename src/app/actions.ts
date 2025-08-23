@@ -6,11 +6,11 @@ import {
   generatePersonalizedTips,
   type GeneratePersonalizedTipsInput,
 } from '@/ai/flows/generate-personalized-tips';
-import type { Loan, LoanRequest, Article, Offer } from '@/lib/types';
+import type { Loan, LoanRequest, Article, Offer, PersonalTransaction } from '@/lib/types';
 import { useLoanStore } from '@/hooks/use-loan-store';
 import { addDays, format } from 'date-fns';
 import { db } from '@/lib/firebase';
-import { collection, doc, getDoc, getDocs, query, where, Timestamp } from 'firebase/firestore';
+import { collection, doc, getDoc, getDocs, query, where, Timestamp, addDoc, orderBy } from 'firebase/firestore';
 
 
 export async function getPersonalizedTips(
@@ -133,4 +133,50 @@ export async function getOffers(): Promise<Offer[]> {
     console.error("Error fetching offers:", error);
     return [];
   }
+}
+
+export async function getTransactions(): Promise<PersonalTransaction[]> {
+    try {
+        const transactionsCollection = collection(db, 'transactions');
+        const q = query(transactionsCollection, orderBy('date', 'desc'));
+        const transactionSnapshot = await getDocs(q);
+        const transactionsList = transactionSnapshot.docs.map(doc => {
+            const data = doc.data();
+            const date = data.date instanceof Timestamp
+                ? data.date.toDate().toISOString().split('T')[0]
+                : new Date().toISOString().split('T')[0];
+
+            return {
+                id: doc.id,
+                type: data.type,
+                amount: data.amount,
+                description: data.description,
+                category: data.category,
+                date,
+            } as PersonalTransaction;
+        });
+        return transactionsList;
+    } catch (error) {
+        console.error("Error fetching transactions:", error);
+        return [];
+    }
+}
+
+export async function addTransaction(transaction: Omit<PersonalTransaction, 'id' | 'date'>): Promise<PersonalTransaction> {
+    try {
+        const docRef = await addDoc(collection(db, 'transactions'), {
+            ...transaction,
+            date: Timestamp.now(),
+        });
+        
+        const newTransaction: PersonalTransaction = {
+            id: docRef.id,
+            ...transaction,
+            date: new Date().toISOString().split('T')[0],
+        };
+        return newTransaction;
+    } catch (error) {
+        console.error("Error adding transaction:", error);
+        throw new Error("Failed to add transaction.");
+    }
 }

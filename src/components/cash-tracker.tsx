@@ -1,23 +1,40 @@
 
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import type { PersonalTransaction } from '@/lib/types';
 import BalanceCard from './balance-card';
 import ExpensePieChart from './expense-pie-chart';
 import PersonalTransactionsTable from './transaction-history';
 import { AddTransactionDialog } from './add-transaction-dialog';
+import { getTransactions, addTransaction } from '@/app/actions';
+import { useToast } from '@/hooks/use-toast';
 
-const mockPersonalTransactions: PersonalTransaction[] = [
-  { id: 'PT-001', type: 'income', amount: 3000, description: 'Monthly Salary', category: 'Salary', date: '2024-08-01' },
-  { id: 'PT-002', type: 'expense', amount: 80, description: 'Bus Fare', category: 'Transport', date: '2024-08-02' },
-  { id: 'PT-003', type: 'expense', amount: 250, description: 'Groceries', category: 'Food', date: '2024-08-03' },
-  { id: 'PT-004', type: 'expense', amount: 120, description: 'Outing with friends', category: 'Entertainment', date: '2024-08-05' },
-  { id: 'PT-005', type: 'expense', amount: 500, description: 'Rent', category: 'Housing', date: '2024-08-05' },
-];
 
 export default function CashTracker() {
-  const [transactions, setTransactions] = useState(mockPersonalTransactions);
+  const [transactions, setTransactions] = useState<PersonalTransaction[]>([]);
+  const [loading, setLoading] = useState(true);
+  const { toast } = useToast();
+
+  useEffect(() => {
+    async function fetchTransactions() {
+      try {
+        const fetchedTransactions = await getTransactions();
+        setTransactions(fetchedTransactions);
+      } catch (error) {
+        console.error("Failed to fetch transactions:", error);
+        toast({
+          title: "Error",
+          description: "Could not fetch transaction history.",
+          variant: "destructive",
+        });
+      } finally {
+        setLoading(false);
+      }
+    }
+    fetchTransactions();
+  }, [toast]);
+
 
   const balance = transactions.reduce((acc, t) => {
     return t.type === 'income' ? acc + t.amount : acc - t.amount;
@@ -25,13 +42,17 @@ export default function CashTracker() {
 
   const expenses = transactions.filter(t => t.type === 'expense');
 
-  const handleAddTransaction = (newTransaction: Omit<PersonalTransaction, 'id' | 'date'>) => {
-    const transaction: PersonalTransaction = {
-      ...newTransaction,
-      id: `PT-00${transactions.length + 1}`,
-      date: new Date().toISOString().split('T')[0],
-    };
-    setTransactions(prev => [transaction, ...prev]);
+  const handleAddTransaction = async (newTransactionData: Omit<PersonalTransaction, 'id' | 'date'>) => {
+    try {
+      const newTransaction = await addTransaction(newTransactionData);
+      setTransactions(prev => [newTransaction, ...prev]);
+    } catch (error) {
+       toast({
+        title: "Error",
+        description: "Failed to add transaction. Please try again.",
+        variant: "destructive",
+      });
+    }
   };
 
   return (
@@ -44,7 +65,11 @@ export default function CashTracker() {
         <div className="flex justify-end">
             <AddTransactionDialog onAddTransaction={handleAddTransaction} />
         </div>
-        <PersonalTransactionsTable transactions={transactions} />
+        {loading ? (
+          <p className="text-muted-foreground">Loading transactions...</p>
+        ) : (
+          <PersonalTransactionsTable transactions={transactions} />
+        )}
       </div>
     </div>
   );
