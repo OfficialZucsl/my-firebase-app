@@ -14,15 +14,11 @@ import {
   ChartTooltipContent,
   type ChartConfig,
 } from '@/components/ui/chart';
+import type { Loan } from '@/lib/types';
+import { useMemo } from 'react';
+import { subMonths, format } from 'date-fns';
+import { Skeleton } from './ui/skeleton';
 
-const chartData = [
-  { month: 'March', principal: 186, interest: 80 },
-  { month: 'April', principal: 305, interest: 200 },
-  { month: 'May', principal: 237, interest: 120 },
-  { month: 'June', principal: 73, interest: 190 },
-  { month: 'July', principal: 209, interest: 130 },
-  { month: 'August', principal: 214, interest: 140 },
-];
 
 const chartConfig = {
   principal: {
@@ -35,7 +31,50 @@ const chartConfig = {
   },
 } satisfies ChartConfig;
 
-export default function RepaymentChart() {
+export default function RepaymentChart({ loans, loading }: { loans: Loan[], loading: boolean }) {
+
+  const activeLoan = useMemo(() => loans.find(loan => loan.status === 'Active'), [loans]);
+
+  // Generate mock historical data based on the active loan for demonstration
+  const chartData = useMemo(() => {
+    if (!activeLoan) {
+      // Create empty chart data for the last 6 months
+      return Array.from({ length: 6 }).map((_, i) => {
+        const d = subMonths(new Date(), 5 - i);
+        return { month: format(d, 'MMM'), principal: 0, interest: 0 };
+      });
+    }
+
+    const weeklyInterest = (activeLoan.amount * activeLoan.interestRate) / activeLoan.termInWeeks;
+    const weeklyPrincipal = (activeLoan.nextPaymentAmount - weeklyInterest);
+
+    return Array.from({ length: 6 }).map((_, i) => {
+        const d = subMonths(new Date(), 5 - i);
+        // Simulate some payments for past months for chart visibility
+        const paymentsMade = activeLoan.termInWeeks > i ? 4 : 0; 
+        return {
+            month: format(d, 'MMM'),
+            principal: weeklyPrincipal * paymentsMade,
+            interest: weeklyInterest * paymentsMade,
+        };
+    });
+  }, [activeLoan]);
+  
+  if (loading) {
+      return (
+        <Card>
+            <CardHeader>
+                <Skeleton className="h-6 w-3/4" />
+                <Skeleton className="h-4 w-1/2" />
+            </CardHeader>
+            <CardContent>
+                <Skeleton className="min-h-[200px] w-full" />
+            </CardContent>
+        </Card>
+      )
+  }
+
+
   return (
     <Card>
       <CardHeader>
