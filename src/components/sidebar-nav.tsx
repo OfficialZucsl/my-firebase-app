@@ -101,10 +101,14 @@ export default function SidebarNav() {
       <SidebarFooter>
         <SidebarMenu>
           <SidebarMenuItem>
-            <SidebarMenuButton>
-              <Settings />
-              Settings
-            </SidebarMenuButton>
+            <Link href="/settings" passHref>
+                <SidebarMenuButton asChild isActive={pathname === '/settings'}>
+                    <span>
+                        <Settings />
+                        Settings
+                    </span>
+                </SidebarMenuButton>
+            </Link>
           </SidebarMenuItem>
         </SidebarMenu>
       </SidebarFooter>
