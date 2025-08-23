@@ -162,7 +162,7 @@ export function RequestLoanDialog({ children }: { children: React.ReactNode }) {
                 max={16}
                 step={1}
                 value={[durationInWeeks]}
-                onValue-change={handleDurationChange}
+                onValueChange={handleDurationChange}
               />
             </div>
             <div className="mt-4 rounded-lg border bg-muted p-4 space-y-2">
