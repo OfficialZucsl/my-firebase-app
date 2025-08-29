@@ -29,7 +29,8 @@ export async function authenticate(prevState: string | undefined, formData: Form
     }
     return 'Something went wrong. Please try again.';
   }
-  redirect('/');
+  // This redirect is handled by middleware after successful login
+  // redirect('/');
 }
 
 
@@ -75,7 +76,8 @@ export async function signup(prevState: string | undefined, formData: FormData) 
         console.error(error);
         return 'Something went wrong. Please try again.';
     }
-    redirect('/');
+    // This redirect is handled by middleware after successful signup
+    // redirect('/');
 }
 
 
