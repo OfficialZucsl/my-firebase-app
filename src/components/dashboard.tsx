@@ -7,7 +7,7 @@ import RepaymentChart from './repayment-chart';
 import { useLoanStore } from '@/hooks/use-loan-store';
 
 export default function Dashboard() {
-  const { loans, fetchLoans, loading } = useLoanStore();
+  const { loans = [], fetchLoans, loading } = useLoanStore();
   
   useEffect(() => {
     // Only fetch loans if the store hasn't already been populated
