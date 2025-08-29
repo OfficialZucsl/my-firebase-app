@@ -1,36 +1,27 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { getAuth } from 'firebase-admin/auth';
+import { getApps } from 'firebase-admin/app';
 
-export function middleware(request: NextRequest) {
+export async function middleware(request: NextRequest) {
   const session = request.cookies.get('session')?.value;
   const pathname = request.nextUrl.pathname;
-  
-  // Public routes that don't require authentication
-  const publicRoutes = ['/login', '/register', '/forgot-password'];
-  const isPublicRoute = publicRoutes.some(route => pathname.startsWith(route));
-  
-  // API routes and static files
-  if (pathname.startsWith('/api/') || pathname.startsWith('/_next/') || pathname.includes('.')) {
+
+  const publicRoutes = ['/login', '/signup'];
+  const isPublicRoute = publicRoutes.includes(pathname);
+
+  // Allow static files and API routes to pass through
+  if (pathname.startsWith('/_next') || pathname.startsWith('/api')) {
     return NextResponse.next();
   }
-  
-  console.log('Middleware check:', {
-    pathname,
-    hasSession: !!session,
-    isPublicRoute
-  });
-  
-  // If user is not authenticated and trying to access protected route
+
+  // If there's no session and the user is not on a public route, redirect to login
   if (!session && !isPublicRoute) {
-    console.log('Redirecting to login - no session');
-    const loginUrl = new URL('/login', request.url);
-    return NextResponse.redirect(loginUrl);
+    return NextResponse.redirect(new URL('/login', request.url));
   }
-  
-  // If user is authenticated and trying to access public auth routes
+
+  // If there is a session and the user is on a public route, redirect to dashboard
   if (session && isPublicRoute) {
-    console.log('Redirecting to dashboard - already authenticated');
-    const dashboardUrl = new URL('/', request.url);
-    return NextResponse.redirect(dashboardUrl);
+     return NextResponse.redirect(new URL('/', request.url));
   }
   
   return NextResponse.next();
@@ -38,13 +29,6 @@ export function middleware(request: NextRequest) {
 
 export const config = {
   matcher: [
-    /*
-     * Match all request paths except for the ones starting with:
-     * - api (API routes)
-     * - _next/static (static files)
-     * - _next/image (image optimization files)
-     * - favicon.ico (favicon file)
-     */
     '/((?!api|_next/static|_next/image|favicon.ico).*)',
   ],
 };

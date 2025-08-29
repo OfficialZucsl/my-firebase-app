@@ -1,6 +1,6 @@
 'use client';
 
-import { useActionState } from 'react';
+import { useState } from 'react';
 import { useFormStatus } from 'react-dom';
 import { register } from '@/app/auth/actions';
 import { Button } from '@/components/ui/button';
@@ -13,7 +13,14 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { AlertCircle } from 'lucide-react';
 
 export default function SignupPage() {
-  const [errorMessage, dispatch] = useActionState(register, undefined);
+  const [errorMessage, setErrorMessage] = useState<string | undefined>(undefined);
+
+  const handleSubmit = async (formData: FormData) => {
+    const result = await register(formData);
+    if (result?.error) {
+      setErrorMessage(result.error);
+    }
+  };
 
   return (
     <main className="flex items-center justify-center min-h-screen bg-background">
@@ -26,7 +33,7 @@ export default function SignupPage() {
           <CardDescription>Enter your information to create an account</CardDescription>
         </CardHeader>
         <CardContent>
-          <form action={dispatch} className="space-y-4">
+          <form action={handleSubmit} className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="name">Full Name</Label>
               <Input id="name" name="name" placeholder="John Doe" required />

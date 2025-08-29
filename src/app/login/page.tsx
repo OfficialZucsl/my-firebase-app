@@ -1,6 +1,6 @@
 'use client';
 
-import { useActionState } from 'react';
+import { useState } from 'react';
 import { useFormStatus } from 'react-dom';
 import { authenticate } from '@/app/auth/actions';
 import { Button } from '@/components/ui/button';
@@ -13,7 +13,14 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { AlertCircle } from 'lucide-react';
 
 export default function LoginPage() {
-  const [errorMessage, dispatch] = useActionState(authenticate, undefined);
+  const [errorMessage, setErrorMessage] = useState<string | undefined>(undefined);
+
+  const handleSubmit = async (formData: FormData) => {
+    const result = await authenticate(formData);
+    if (result?.error) {
+      setErrorMessage(result.error);
+    }
+  };
 
   return (
     <main className="flex items-center justify-center min-h-screen bg-background">
@@ -26,7 +33,7 @@ export default function LoginPage() {
           <CardDescription>Enter your email below to login to your account</CardDescription>
         </CardHeader>
         <CardContent>
-          <form action={dispatch} className="space-y-4">
+          <form action={handleSubmit} className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="email">Email</Label>
               <Input id="email" name="email" type="email" placeholder="m@example.com" required />
