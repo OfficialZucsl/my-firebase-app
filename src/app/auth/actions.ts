@@ -1,3 +1,4 @@
+
 'use server';
 
 import { signInWithEmailAndPassword, createUserWithEmailAndPassword } from 'firebase/auth';
@@ -5,11 +6,14 @@ import { auth, db } from '@/lib/firebase';
 import { redirect } from 'next/navigation';
 import { doc, setDoc, Timestamp } from 'firebase/firestore';
 import { createSessionCookie } from '@/lib/firebase-admin';
+import { cookies } from 'next/headers';
 
 export async function authenticate(formData: FormData) {
-  if (!formData?.get('email')) {
-    return { error: 'Form data is missing.' };
+  if (!formData) {
+    // This handles the initial call by useActionState without form data.
+    return { error: undefined };
   }
+
   const email = formData.get('email') as string;
   const password = formData.get('password') as string;
 
@@ -23,24 +27,21 @@ export async function authenticate(formData: FormData) {
     
     await createSessionCookie(idToken);
 
-  } catch (error) {
+  } catch (error: any) {
     console.error('Authentication error:', error);
-    if (error instanceof Error) {
-        if (error.message.includes('auth/invalid-credential')) {
-            return { error: 'Invalid email or password.' };
-        }
-        return { error: 'Authentication failed. Please try again.' };
-    }
-    return { error: 'An unknown authentication error occurred.' };
+    // Provide more specific error messages from Firebase
+    return { error: error.message || 'An unknown authentication error occurred.' };
   }
   
   redirect('/');
 }
 
 export async function register(formData: FormData) {
-  if (!formData?.get('email')) {
-    return { error: 'Form data is missing.' };
+   if (!formData) {
+    // This handles the initial call by useActionState without form data.
+    return { error: undefined };
   }
+  
   const email = formData.get('email') as string;
   const password = formData.get('password') as string;
   const name = formData.get('name') as string;
@@ -63,6 +64,7 @@ export async function register(formData: FormData) {
     const userCredential = await createUserWithEmailAndPassword(auth, email, password);
     const user = userCredential.user;
 
+    // Create a corresponding user document in Firestore
     await setDoc(doc(db, 'users', user.uid), {
         uid: user.uid,
         email: user.email,
@@ -74,15 +76,10 @@ export async function register(formData: FormData) {
     
     await createSessionCookie(idToken);
     
-  } catch (error) {
+  } catch (error: any) {
     console.error('Registration error:', error);
-    if (error instanceof Error) {
-        if (error.message.includes('auth/email-already-in-use')) {
-            return { error: 'This email is already registered.' };
-        }
-        return { error: 'Registration failed. Please try again.' };
-    }
-    return { error: 'An unknown registration error occurred.' };
+    // Provide more specific error messages from Firebase
+    return { error: error.message || 'An unknown registration error occurred.' };
   }
   
   redirect('/');
