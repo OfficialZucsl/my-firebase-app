@@ -10,7 +10,6 @@ import { cookies } from 'next/headers';
 
 export async function authenticate(formData: FormData) {
   if (!formData) {
-    // This handles the initial call by useActionState without form data.
     return { error: undefined };
   }
 
@@ -29,7 +28,6 @@ export async function authenticate(formData: FormData) {
 
   } catch (error: any) {
     console.error('Authentication error:', error);
-    // Provide more specific error messages from Firebase
     return { error: error.message || 'An unknown authentication error occurred.' };
   }
   
@@ -38,7 +36,6 @@ export async function authenticate(formData: FormData) {
 
 export async function register(formData: FormData) {
    if (!formData) {
-    // This handles the initial call by useActionState without form data.
     return { error: undefined };
   }
   
@@ -64,7 +61,6 @@ export async function register(formData: FormData) {
     const userCredential = await createUserWithEmailAndPassword(auth, email, password);
     const user = userCredential.user;
 
-    // Create a corresponding user document in Firestore
     await setDoc(doc(db, 'users', user.uid), {
         uid: user.uid,
         email: user.email,
@@ -78,7 +74,6 @@ export async function register(formData: FormData) {
     
   } catch (error: any) {
     console.error('Registration error:', error);
-    // Provide more specific error messages from Firebase
     return { error: error.message || 'An unknown registration error occurred.' };
   }
   

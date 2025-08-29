@@ -8,22 +8,26 @@ import 'server-only';
 
 let adminApp: App;
 
-if (!getApps().length) {
-  const serviceAccountKey = process.env.FIREBASE_SERVICE_ACCOUNT_KEY;
-  if (serviceAccountKey) {
-    try {
-      const serviceAccount = JSON.parse(serviceAccountKey);
-      adminApp = initializeApp({
-        credential: cert(serviceAccount),
-      });
-    } catch (error) {
-      console.error('Error parsing Firebase service account key:', error);
-    }
-  } else {
-    console.warn('FIREBASE_SERVICE_ACCOUNT_KEY is not set. Server-side Firebase features will be disabled.');
+function getAdminApp(): App {
+  if (getApps().length > 0) {
+    return getApps()[0];
   }
-} else {
-  adminApp = getApps()[0];
+
+  const serviceAccountKey = process.env.FIREBASE_SERVICE_ACCOUNT_KEY;
+  if (!serviceAccountKey) {
+    throw new Error('FIREBASE_SERVICE_ACCOUNT_KEY is not set. Server-side Firebase features will be disabled.');
+  }
+
+  try {
+    const serviceAccount = JSON.parse(serviceAccountKey);
+    adminApp = initializeApp({
+      credential: cert(serviceAccount),
+    });
+    return adminApp;
+  } catch (error) {
+    console.error('Error initializing Firebase Admin SDK:', error);
+    throw new Error('Could not initialize Firebase Admin SDK. Please check your FIREBASE_SERVICE_ACCOUNT_KEY.');
+  }
 }
 
 
@@ -34,13 +38,9 @@ export async function getAuthenticatedUser() {
     return null;
   }
 
-  if (!adminApp) {
-    console.error("Firebase Admin SDK is not initialized. Cannot verify session cookie.");
-    return null;
-  }
-
   try {
-    const decodedIdToken = await getAuth(adminApp).verifySessionCookie(session, true);
+    const app = getAdminApp();
+    const decodedIdToken = await getAuth(app).verifySessionCookie(session, true);
     return decodedIdToken;
   } catch (error) {
     console.error('Error verifying session cookie:', error);
@@ -55,15 +55,20 @@ export async function getAuthenticatedUser() {
 }
 
 export async function createSessionCookie(idToken: string) {
-    if (!adminApp) {
-      throw new Error("Firebase Admin SDK is not initialized. Cannot create session cookie.");
-    }
+  try {
+    const app = getAdminApp();
     const expiresIn = 60 * 60 * 24 * 5 * 1000; // 5 days
-    const sessionCookie = await getAuth(adminApp).createSessionCookie(idToken, { expiresIn });
+    const sessionCookie = await getAuth(app).createSessionCookie(idToken, { expiresIn });
     cookies().set('session', sessionCookie, {
         maxAge: expiresIn,
         httpOnly: true,
         secure: process.env.NODE_ENV === 'production',
         sameSite: 'lax',
     });
+  } catch (error) {
+     if (error instanceof Error && error.message.includes('FIREBASE_SERVICE_ACCOUNT_KEY')) {
+        throw new Error('Firebase Admin SDK is not initialized. Cannot create session cookie.');
+     }
+     throw error;
+  }
 }

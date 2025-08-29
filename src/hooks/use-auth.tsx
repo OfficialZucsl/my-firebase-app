@@ -1,7 +1,7 @@
 'use client';
 
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
-import { User, onAuthStateChanged, signOut } from 'firebase/auth';
+import { User, onAuthStateChanged } from 'firebase/auth';
 import { auth } from '@/lib/firebase';
 import { useRouter } from 'next/navigation';
 import { logout as serverLogout } from '@/app/auth/actions';
@@ -34,9 +34,8 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
   const logout = async () => {
     try {
-      await signOut(auth); // Sign out from client-side Firebase Auth
-      await serverLogout(); // Call server action to clear httpOnly cookie
-      router.refresh(); // Refresh the page to reflect logout
+      await serverLogout();
+      router.refresh();
     } catch (error) {
       console.error('Logout error:', error);
     }
