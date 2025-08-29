@@ -9,8 +9,12 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { logout } from '@/app/auth/actions';
+import Link from 'next/link';
+
 
 export default function Header() {
+
   return (
     <header className="sticky top-0 z-10 flex h-16 items-center gap-4 border-b bg-card px-4 md:px-6">
       <div className="flex items-center gap-2 md:hidden">
@@ -30,10 +34,18 @@ export default function Header() {
           <DropdownMenuContent align="end">
             <DropdownMenuLabel>My Account</DropdownMenuLabel>
             <DropdownMenuSeparator />
-            <DropdownMenuItem>Settings</DropdownMenuItem>
+            <Link href="/settings">
+              <DropdownMenuItem>Settings</DropdownMenuItem>
+            </Link>
             <DropdownMenuItem>Support</DropdownMenuItem>
             <DropdownMenuSeparator />
-            <DropdownMenuItem>Logout</DropdownMenuItem>
+             <form action={logout}>
+              <button type="submit" className="w-full text-left">
+                <DropdownMenuItem>
+                  Logout
+                </DropdownMenuItem>
+              </button>
+            </form>
           </DropdownMenuContent>
         </DropdownMenu>
       </div>
