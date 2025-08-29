@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState } from 'react';
@@ -166,7 +165,7 @@ export function RequestLoanDialog({ children }: { children: React.ReactNode }) {
                 max={50000}
                 step={100}
                 value={[amount]}
-                onValue-change={handleAmountChange}
+                onValueChange={handleAmountChange}
               />
             </div>
             <div className="space-y-2">
@@ -180,7 +179,7 @@ export function RequestLoanDialog({ children }: { children: React.ReactNode }) {
                 max={16}
                 step={1}
                 value={[durationInWeeks]}
-                onValue-change={handleDurationChange}
+                onValueChange={handleDurationChange}
               />
             </div>
             <div className="space-y-2">
