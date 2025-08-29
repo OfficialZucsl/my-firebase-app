@@ -11,7 +11,7 @@ import { getTransactions, addTransaction } from '@/app/actions';
 import { useToast } from '@/hooks/use-toast';
 
 
-export default function CashTracker() {
+export default function CashTracker({ userId }: { userId: string }) {
   const [transactions, setTransactions] = useState<PersonalTransaction[]>([]);
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
@@ -19,7 +19,7 @@ export default function CashTracker() {
   useEffect(() => {
     async function fetchTransactions() {
       try {
-        const fetchedTransactions = await getTransactions();
+        const fetchedTransactions = await getTransactions(userId);
         setTransactions(fetchedTransactions);
       } catch (error) {
         console.error("Failed to fetch transactions:", error);
@@ -32,8 +32,10 @@ export default function CashTracker() {
         setLoading(false);
       }
     }
-    fetchTransactions();
-  }, [toast]);
+    if (userId) {
+      fetchTransactions();
+    }
+  }, [userId, toast]);
 
 
   const balance = transactions.reduce((acc, t) => {
@@ -42,9 +44,10 @@ export default function CashTracker() {
 
   const expenses = transactions.filter(t => t.type === 'expense');
 
-  const handleAddTransaction = async (newTransactionData: Omit<PersonalTransaction, 'id' | 'date'>) => {
+  const handleAddTransaction = async (newTransactionData: Omit<PersonalTransaction, 'id' | 'date' | 'userId'>) => {
     try {
-      const newTransaction = await addTransaction(newTransactionData);
+      const transactionWithUser = { ...newTransactionData, userId };
+      const newTransaction = await addTransaction(transactionWithUser);
       setTransactions(prev => [newTransaction, ...prev]);
     } catch (error) {
        toast({

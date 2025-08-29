@@ -19,15 +19,17 @@ export async function getPersonalizedTips(
   return personalizedTips;
 }
 
-export async function getLoans(): Promise<Loan[]> {
+export async function getLoans(userId: string): Promise<Loan[]> {
     try {
+        if (!userId) return [];
         const loansCollection = collection(db, 'loans');
-        const q = query(loansCollection, orderBy('createdAt', 'desc'));
+        const q = query(loansCollection, where('userId', '==', userId), orderBy('createdAt', 'desc'));
         const loanSnapshot = await getDocs(q);
         const loansList = loanSnapshot.docs.map(doc => {
             const data = doc.data();
             return {
                 id: data.id, // Using the custom ID from the document
+                userId: data.userId,
                 amount: data.amount || 0,
                 interestRate: data.interestRate || 0,
                 termInWeeks: data.termInWeeks || 0,
@@ -52,6 +54,7 @@ export async function submitLoanRequest(
     const loanId = `LN${Math.floor(Math.random() * 90000) + 10000}`;
     const newLoanData = {
       id: loanId,
+      userId: loanDetails.userId,
       amount: loanDetails.amount,
       interestRate: loanDetails.interestRate,
       termInWeeks: loanDetails.durationInWeeks,
@@ -62,12 +65,11 @@ export async function submitLoanRequest(
       createdAt: serverTimestamp(),
     };
 
-    // We use the custom loanId as the document ID for easy querying
     await addDoc(collection(db, 'loans'), newLoanData);
 
     const newLoan: Loan = {
       ...newLoanData,
-      createdAt: undefined, // This is a server timestamp, not needed on client
+      createdAt: undefined, 
     };
 
     return {
@@ -118,7 +120,6 @@ export async function getArticles(): Promise<Article[]> {
     const articleSnapshot = await getDocs(articlesCollection);
     const articlesList = articleSnapshot.docs.map(doc => {
       const data = doc.data();
-      // Ensure createdAt is converted correctly
       const createdAt = data.createdAt instanceof Timestamp 
         ? data.createdAt.toDate().toISOString().split('T')[0] 
         : new Date().toISOString().split('T')[0];
@@ -192,10 +193,11 @@ export async function getOffers(): Promise<Offer[]> {
   }
 }
 
-export async function getTransactions(): Promise<PersonalTransaction[]> {
+export async function getTransactions(userId: string): Promise<PersonalTransaction[]> {
     try {
+        if (!userId) return [];
         const transactionsCollection = collection(db, 'transactions');
-        const q = query(transactionsCollection, orderBy('date', 'desc'));
+        const q = query(transactionsCollection, where('userId', '==', userId), orderBy('date', 'desc'));
         const transactionSnapshot = await getDocs(q);
         const transactionsList = transactionSnapshot.docs.map(doc => {
             const data = doc.data();
@@ -205,6 +207,7 @@ export async function getTransactions(): Promise<PersonalTransaction[]> {
 
             return {
                 id: doc.id,
+                userId: data.userId,
                 type: data.type,
                 amount: data.amount,
                 description: data.description,
@@ -238,10 +241,11 @@ export async function addTransaction(transaction: Omit<PersonalTransaction, 'id'
     }
 }
 
-export async function getPayments(): Promise<Payment[]> {
+export async function getPayments(userId: string): Promise<Payment[]> {
   try {
+    if (!userId) return [];
     const paymentsCollection = collection(db, 'payments');
-    const q = query(paymentsCollection, orderBy('date', 'desc'));
+    const q = query(paymentsCollection, where('userId', '==', userId), orderBy('date', 'desc'));
     const paymentSnapshot = await getDocs(q);
     const paymentsList = paymentSnapshot.docs.map(doc => {
       const data = doc.data();
@@ -251,6 +255,7 @@ export async function getPayments(): Promise<Payment[]> {
       
       return {
         id: doc.id,
+        userId: data.userId,
         loanId: data.loanId || 'N/A',
         amount: data.amount || 0,
         status: data.status || 'pending',

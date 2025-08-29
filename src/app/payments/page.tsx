@@ -17,10 +17,12 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 import { getPayments } from '../actions';
+import { getAuthenticatedUser } from '@/lib/firebase-admin';
 
 
 export default async function PaymentsPage() {
-  const payments = await getPayments();
+  const user = await getAuthenticatedUser();
+  const payments = user ? await getPayments(user.uid) : [];
 
   return (
     <SidebarProvider>

@@ -6,8 +6,16 @@ import {
 import Header from '@/components/header';
 import SidebarNav from '@/components/sidebar-nav';
 import Dashboard from '@/components/dashboard';
+import { getAuthenticatedUser } from '@/lib/firebase-admin';
 
-export default function HomePage() {
+export default async function HomePage() {
+  const user = await getAuthenticatedUser();
+
+  if (!user) {
+    // This case should ideally be handled by middleware, but as a fallback:
+    return null; 
+  }
+
   return (
     <SidebarProvider>
       <Sidebar>
@@ -17,7 +25,7 @@ export default function HomePage() {
         <div className="flex min-h-screen flex-col">
           <Header />
           <main className="flex-1 bg-background p-4 md:p-6 lg:p-8">
-            <Dashboard />
+            <Dashboard userId={user.uid} />
           </main>
         </div>
       </SidebarInset>

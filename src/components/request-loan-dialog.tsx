@@ -33,6 +33,7 @@ import {
 import { ScrollArea } from './ui/scroll-area';
 import { useLoanStore } from '@/hooks/use-loan-store';
 import { Textarea } from './ui/textarea';
+import { useAuth } from '@/hooks/use-auth';
 
 
 const chartConfig = {
@@ -69,6 +70,7 @@ export function RequestLoanDialog({ children }: { children: React.ReactNode }) {
   const [open, setOpen] = useState(false);
   const { toast } = useToast();
   const addLoan = useLoanStore(state => state.addLoan);
+  const { user } = useAuth();
 
   const interestRate = calculateInterestRate(durationInWeeks);
   const totalInterest = amount * interestRate;
@@ -98,6 +100,10 @@ export function RequestLoanDialog({ children }: { children: React.ReactNode }) {
   };
 
   const handleSubmit = async () => {
+    if (!user) {
+        toast({ title: 'Error', description: 'You must be logged in to request a loan.', variant: 'destructive' });
+        return;
+    }
     if (!reason) {
         toast({
           title: 'Error',
@@ -108,7 +114,7 @@ export function RequestLoanDialog({ children }: { children: React.ReactNode }) {
     }
     setLoading(true);
     try {
-      const result = await submitLoanRequest({ amount, durationInWeeks, reason, weeklyPayment, interestRate });
+      const result = await submitLoanRequest({ userId: user.uid, amount, durationInWeeks, reason, weeklyPayment, interestRate });
       if (result.success) {
         addLoan(result.newLoan);
         toast({
@@ -160,7 +166,7 @@ export function RequestLoanDialog({ children }: { children: React.ReactNode }) {
                 max={50000}
                 step={100}
                 value={[amount]}
-                onValueChange={handleAmountChange}
+                onValue-change={handleAmountChange}
               />
             </div>
             <div className="space-y-2">
@@ -174,7 +180,7 @@ export function RequestLoanDialog({ children }: { children: React.ReactNode }) {
                 max={16}
                 step={1}
                 value={[durationInWeeks]}
-                onValueChange={handleDurationChange}
+                onValue-change={handleDurationChange}
               />
             </div>
             <div className="space-y-2">

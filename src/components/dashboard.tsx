@@ -6,15 +6,14 @@ import PersonalizedTipsForm from './personalized-tips-form';
 import RepaymentChart from './repayment-chart';
 import { useLoanStore } from '@/hooks/use-loan-store';
 
-export default function Dashboard() {
+export default function Dashboard({ userId }: { userId: string }) {
   const { loans = [], fetchLoans, loading } = useLoanStore();
   
   useEffect(() => {
-    // Only fetch loans if the store hasn't already been populated
-    if (loans.length === 0) {
-      fetchLoans();
+    if (userId) {
+      fetchLoans(userId);
     }
-  }, [fetchLoans, loans.length]);
+  }, [userId, fetchLoans]);
 
   return (
     <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 md:gap-8">

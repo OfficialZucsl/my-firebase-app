@@ -14,12 +14,12 @@ export async function authenticate(prevState: string | undefined, formData: Form
     const password = formData.get('password') as string;
     const userCredential = await signInWithEmailAndPassword(auth, email, password);
     const idToken = await userCredential.user.getIdToken();
+    const expiresIn = 60 * 60 * 24 * 5 * 1000; // 5 days
 
-    // Set cookie
     cookies().set(SESSION_COOKIE_NAME, idToken, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
-      maxAge: 60 * 60 * 24, // 1 day
+      maxAge: expiresIn,
       path: '/',
     });
     
@@ -29,7 +29,6 @@ export async function authenticate(prevState: string | undefined, formData: Form
     }
     return 'Something went wrong. Please try again.';
   }
-  // Redirect must be called outside of the try/catch block
   redirect('/');
 }
 
@@ -59,10 +58,11 @@ export async function signup(prevState: string | undefined, formData: FormData) 
         });
         
         const idToken = await user.getIdToken();
+        const expiresIn = 60 * 60 * 24 * 5 * 1000; // 5 days
         cookies().set(SESSION_COOKIE_NAME, idToken, {
             httpOnly: true,
             secure: process.env.NODE_ENV === 'production',
-            maxAge: 60 * 60 * 24, // 1 day
+            maxAge: expiresIn,
             path: '/',
         });
 
@@ -76,7 +76,6 @@ export async function signup(prevState: string | undefined, formData: FormData) 
         console.error(error);
         return 'Something went wrong. Please try again.';
     }
-     // Redirect must be called outside of the try/catch block
     redirect('/');
 }
 

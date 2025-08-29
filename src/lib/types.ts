@@ -2,6 +2,7 @@
 
 export interface Loan {
   id: string;
+  userId: string;
   amount: number;
   interestRate: number;
   termInWeeks: number;
@@ -12,6 +13,7 @@ export interface Loan {
 }
 
 export interface LoanRequest {
+  userId: string;
   amount: number;
   durationInWeeks: number;
   reason: string;
@@ -21,6 +23,7 @@ export type TransactionType = 'income' | 'expense';
 
 export interface PersonalTransaction {
   id: string;
+  userId: string;
   type: TransactionType;
   amount: number;
   description: string;
@@ -48,6 +51,7 @@ export interface Offer {
 
 export interface Payment {
   id: string;
+  userId: string;
   loanId: string;
   amount: number;
   date: string;

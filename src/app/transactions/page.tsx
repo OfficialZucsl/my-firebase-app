@@ -7,8 +7,12 @@ import {
 import Header from '@/components/header';
 import SidebarNav from '@/components/sidebar-nav';
 import CashTracker from '@/components/cash-tracker';
+import { getAuthenticatedUser } from '@/lib/firebase-admin';
 
-export default function TransactionsPage() {
+export default async function TransactionsPage() {
+  const user = await getAuthenticatedUser();
+  if (!user) return null;
+
   return (
     <SidebarProvider>
       <Sidebar>
@@ -21,7 +25,7 @@ export default function TransactionsPage() {
             <div className="space-y-4">
               <h1 className="text-2xl font-semibold">Cash Management</h1>
               <p className="text-muted-foreground">Track your personal income and expenses to better manage your finances.</p>
-              <CashTracker />
+              <CashTracker userId={user.uid} />
             </div>
           </main>
         </div>
