@@ -5,7 +5,7 @@ import { getLoans } from '@/app/actions';
 type LoanState = {
   loans: Loan[];
   loading: boolean;
-  fetchLoans: (userId: string) => Promise<void>;
+  fetchLoans: (userId?: string) => Promise<void>;
   addLoan: (loan: Loan) => void;
   updateLoan: (id: string, updates: Partial<Loan>) => void;
 };
@@ -13,7 +13,7 @@ type LoanState = {
 export const useLoanStore = create<LoanState>((set) => ({
   loans: [],
   loading: true,
-  fetchLoans: async (userId: string) => {
+  fetchLoans: async (userId?: string) => {
     if (!userId) {
         set({ loans: [], loading: false });
         return;

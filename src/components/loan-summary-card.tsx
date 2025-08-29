@@ -16,7 +16,7 @@ import { useMemo } from 'react';
 import { Skeleton } from './ui/skeleton';
 
 export default function LoanSummaryCard({ loans, loading }: { loans: Loan[], loading: boolean }) {
-  const activeLoan = useMemo(() => loans.find(loan => loan.status === 'Active'), [loans]);
+  const activeLoan = useMemo(() => loans?.find(loan => loan.status === 'Active'), [loans]);
   
   // Mocking payment progress for demonstration. In a real app, this would come from payment history.
   const totalLoanAmount = activeLoan ? activeLoan.amount * (1 + activeLoan.interestRate) : 0;
