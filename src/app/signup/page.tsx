@@ -2,7 +2,7 @@
 
 import { useActionState } from 'react';
 import { useFormStatus } from 'react-dom';
-import { signup } from '@/app/auth/actions';
+import { register } from '@/app/auth/actions';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -13,7 +13,7 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { AlertCircle } from 'lucide-react';
 
 export default function SignupPage() {
-  const [errorMessage, dispatch] = useActionState(signup, undefined);
+  const [errorMessage, dispatch] = useActionState(register, undefined);
 
   return (
     <main className="flex items-center justify-center min-h-screen bg-background">
@@ -38,6 +38,10 @@ export default function SignupPage() {
             <div className="space-y-2">
               <Label htmlFor="password">Password</Label>
               <Input id="password" name="password" type="password" required />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="confirmPassword">Confirm Password</Label>
+              <Input id="confirmPassword" name="confirmPassword" type="password" required />
             </div>
             {errorMessage && (
                 <Alert variant="destructive">

@@ -17,23 +17,33 @@ interface AuthProviderProps {
   children: ReactNode;
 }
 
+// Helper to get a cookie
+const getCookie = (name: string): string | null => {
+  const value = `; ${document.cookie}`;
+  const parts = value.split(`; ${name}=`);
+  if (parts.length === 2) return parts.pop()?.split(';').shift() || null;
+  return null;
+};
+
+
 export function AuthProvider({ children }: AuthProviderProps) {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const router = useRouter();
 
   useEffect(() => {
-    // This listener will fire whenever the auth state changes
-    // Including when a new session cookie is recognized by Firebase
+    // Check for the login_success cookie. If it exists, it means a server action
+    // just completed. We refresh the page to ensure all server-set cookies
+    // are correctly picked up by the client and Firebase SDK.
+    if (getCookie('login_success') === 'true') {
+        // Clear the cookie by setting its expiry date to the past
+        document.cookie = 'login_success=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT';
+        router.refresh();
+    }
+    
     const unsubscribe = onAuthStateChanged(auth, (user) => {
-      console.log('Auth state changed:', user ? user.uid : 'No user');
       setUser(user);
       setLoading(false);
-      
-      // Force a router refresh to sync server and client state
-      if (user) {
-        router.refresh();
-      }
     });
 
     return () => unsubscribe();
@@ -42,8 +52,9 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const logout = async () => {
     try {
       await signOut(auth);
-      // Clear any server-side session
+      // Use server action for logout to clear httpOnly cookie
       await fetch('/api/auth/logout', { method: 'POST' });
+      // Redirect on the client side after server action completes
       router.push('/login');
       router.refresh();
     } catch (error) {
@@ -70,32 +81,4 @@ export function useAuth() {
     throw new Error('useAuth must be used within an AuthProvider');
   }
   return context;
-}
-
-// Higher-order component for protecting routes
-export function withAuth<P extends object>(Component: React.ComponentType<P>) {
-  return function AuthenticatedComponent(props: P) {
-    const { user, loading } = useAuth();
-    const router = useRouter();
-
-    useEffect(() => {
-      if (!loading && !user) {
-        router.push('/login');
-      }
-    }, [user, loading, router]);
-
-    if (loading) {
-      return (
-        <div className="flex items-center justify-center min-h-screen">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-        </div>
-      );
-    }
-
-    if (!user) {
-      return null; // Will redirect in useEffect
-    }
-
-    return <Component {...props} />;
-  };
 }
