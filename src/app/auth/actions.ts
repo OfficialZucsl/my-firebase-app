@@ -1,11 +1,17 @@
 'use server';
 
 import { signInWithEmailAndPassword, createUserWithEmailAndPassword } from 'firebase/auth';
-import { auth } from '@/lib/firebase';
+import { auth, db } from '@/lib/firebase';
 import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
+import { doc, setDoc, Timestamp } from 'firebase/firestore';
+
 
 export async function authenticate(formData: FormData) {
+  // Prevent crash on initial render with useActionState
+  if (!formData) {
+    return;
+  }
   const email = formData.get('email') as string;
   const password = formData.get('password') as string;
 
@@ -14,55 +20,41 @@ export async function authenticate(formData: FormData) {
   }
 
   try {
-    // Sign in with Firebase Auth
     const userCredential = await signInWithEmailAndPassword(auth, email, password);
     const user = userCredential.user;
     
-    // Get the ID token
     const idToken = await user.getIdToken();
     
-    // Set the session cookie
-    const cookieStore = await cookies();
-    cookieStore.set('session', idToken, {
+    cookies().set('session', idToken, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'lax',
       maxAge: 60 * 60 * 24 * 5, // 5 days
     });
 
-    // Set a flag to indicate successful login
-    cookieStore.set('login_success', 'true', {
-      httpOnly: false, // This needs to be accessible to client-side
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
-      maxAge: 10, // Short-lived, just for the transition
-    });
-
-    console.log('Authentication successful, redirecting...');
-    
   } catch (error) {
     console.error('Authentication error:', error);
     if (error instanceof Error) {
-      throw new Error(`Authentication failed: ${error.message}`);
+      return error.message;
     }
-    throw new Error('Authentication failed');
+    return 'Authentication failed';
   }
   
-  // Redirect after successful authentication
   redirect('/');
 }
 
 export async function register(formData: FormData) {
+   // Prevent crash on initial render with useActionState
+  if (!formData) {
+    return;
+  }
   const email = formData.get('email') as string;
   const password = formData.get('password') as string;
-  const confirmPassword = formData.get('confirmPassword') as string;
+  const name = formData.get('name') as string;
 
-  if (!email || !password || !confirmPassword) {
+
+  if (!email || !password || !name) {
     throw new Error('All fields are required');
-  }
-
-  if (password !== confirmPassword) {
-    throw new Error('Passwords do not match');
   }
 
   if (password.length < 6) {
@@ -70,51 +62,38 @@ export async function register(formData: FormData) {
   }
 
   try {
-    // Create user with Firebase Auth
     const userCredential = await createUserWithEmailAndPassword(auth, email, password);
     const user = userCredential.user;
+
+    // Create user document in Firestore
+    await setDoc(doc(db, 'users', user.uid), {
+        uid: user.uid,
+        email: user.email,
+        displayName: name,
+        createdAt: Timestamp.now(),
+    });
     
-    // Get the ID token
     const idToken = await user.getIdToken();
     
-    // Set the session cookie
-    const cookieStore = await cookies();
-    cookieStore.set('session', idToken, {
+    cookies().set('session', idToken, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'lax',
       maxAge: 60 * 60 * 24 * 5, // 5 days
     });
-
-    // Set a flag to indicate successful registration
-    cookieStore.set('login_success', 'true', {
-      httpOnly: false,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
-      maxAge: 10, // Short-lived
-    });
-
-    console.log('Registration successful, redirecting...');
     
   } catch (error) {
     console.error('Registration error:', error);
     if (error instanceof Error) {
-      throw new Error(`Registration failed: ${error.message}`);
+        return error.message;
     }
-    throw new Error('Registration failed');
+    return 'Registration failed';
   }
   
-  // Redirect after successful registration
   redirect('/');
 }
 
 export async function logout() {
-  const cookieStore = await cookies();
-  
-  // Clear session cookie
-  cookieStore.delete('session');
-  cookieStore.delete('login_success');
-  
-  // Redirect to login page
+  cookies().delete('session');
   redirect('/login');
 }
