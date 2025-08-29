@@ -1,86 +1,120 @@
 'use server';
 
 import { signInWithEmailAndPassword, createUserWithEmailAndPassword } from 'firebase/auth';
-import { auth, db } from '@/lib/firebase';
+import { auth } from '@/lib/firebase';
 import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
-import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
 
-const SESSION_COOKIE_NAME = 'user_session';
+export async function authenticate(formData: FormData) {
+  const email = formData.get('email') as string;
+  const password = formData.get('password') as string;
 
-export async function authenticate(prevState: string | undefined, formData: FormData) {
+  if (!email || !password) {
+    throw new Error('Email and password are required');
+  }
+
   try {
-    const email = formData.get('email') as string;
-    const password = formData.get('password') as string;
+    // Sign in with Firebase Auth
     const userCredential = await signInWithEmailAndPassword(auth, email, password);
-    const idToken = await userCredential.user.getIdToken();
-    const expiresIn = 60 * 60 * 24 * 5 * 1000; // 5 days
-
-    cookies().set(SESSION_COOKIE_NAME, idToken, {
+    const user = userCredential.user;
+    
+    // Get the ID token
+    const idToken = await user.getIdToken();
+    
+    // Set the session cookie
+    const cookieStore = await cookies();
+    cookieStore.set('session', idToken, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
-      maxAge: expiresIn,
-      path: '/',
+      sameSite: 'lax',
+      maxAge: 60 * 60 * 24 * 5, // 5 days
     });
+
+    // Set a flag to indicate successful login
+    cookieStore.set('login_success', 'true', {
+      httpOnly: false, // This needs to be accessible to client-side
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      maxAge: 10, // Short-lived, just for the transition
+    });
+
+    console.log('Authentication successful, redirecting...');
     
-  } catch (error: any) {
-    if (error.code === 'auth/invalid-credential') {
-      return 'Invalid email or password.';
+  } catch (error) {
+    console.error('Authentication error:', error);
+    if (error instanceof Error) {
+      throw new Error(`Authentication failed: ${error.message}`);
     }
-    return 'Something went wrong. Please try again.';
+    throw new Error('Authentication failed');
   }
+  
+  // Redirect after successful authentication
   redirect('/');
 }
 
+export async function register(formData: FormData) {
+  const email = formData.get('email') as string;
+  const password = formData.get('password') as string;
+  const confirmPassword = formData.get('confirmPassword') as string;
 
-export async function signup(prevState: string | undefined, formData: FormData) {
-    try {
-        const name = formData.get('name') as string;
-        const email = formData.get('email') as string;
-        const password = formData.get('password') as string;
+  if (!email || !password || !confirmPassword) {
+    throw new Error('All fields are required');
+  }
 
-        const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-        const user = userCredential.user;
+  if (password !== confirmPassword) {
+    throw new Error('Passwords do not match');
+  }
 
-        // Create user profile in Firestore
-        await setDoc(doc(db, 'users', user.uid), {
-            fullName: name,
-            email: user.email,
-            createdAt: serverTimestamp(),
-            // Initialize other fields as empty or with default values
-            phoneNumber: '',
-            nationalId: '',
-            employmentStatus: 'Unemployed',
-            employerName: '',
-            workplaceAddress: '',
-            supervisorContact: '',
-            monthlyIncome: 0,
-        });
-        
-        const idToken = await user.getIdToken();
-        const expiresIn = 60 * 60 * 24 * 5 * 1000; // 5 days
-        cookies().set(SESSION_COOKIE_NAME, idToken, {
-            httpOnly: true,
-            secure: process.env.NODE_ENV === 'production',
-            maxAge: expiresIn,
-            path: '/',
-        });
+  if (password.length < 6) {
+    throw new Error('Password must be at least 6 characters long');
+  }
 
-    } catch (error: any) {
-        if (error.code === 'auth/email-already-in-use') {
-            return 'This email is already registered. Please login.';
-        }
-        if (error.code === 'auth/weak-password') {
-            return 'Password should be at least 6 characters.';
-        }
-        console.error(error);
-        return 'Something went wrong. Please try again.';
+  try {
+    // Create user with Firebase Auth
+    const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+    const user = userCredential.user;
+    
+    // Get the ID token
+    const idToken = await user.getIdToken();
+    
+    // Set the session cookie
+    const cookieStore = await cookies();
+    cookieStore.set('session', idToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      maxAge: 60 * 60 * 24 * 5, // 5 days
+    });
+
+    // Set a flag to indicate successful registration
+    cookieStore.set('login_success', 'true', {
+      httpOnly: false,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      maxAge: 10, // Short-lived
+    });
+
+    console.log('Registration successful, redirecting...');
+    
+  } catch (error) {
+    console.error('Registration error:', error);
+    if (error instanceof Error) {
+      throw new Error(`Registration failed: ${error.message}`);
     }
-    redirect('/');
+    throw new Error('Registration failed');
+  }
+  
+  // Redirect after successful registration
+  redirect('/');
 }
 
-
 export async function logout() {
-  cookies().delete(SESSION_COOKIE_NAME);
+  const cookieStore = await cookies();
+  
+  // Clear session cookie
+  cookieStore.delete('session');
+  cookieStore.delete('login_success');
+  
+  // Redirect to login page
   redirect('/login');
 }
