@@ -6,9 +6,12 @@ const AUTH_ROUTES = ['/login', '/signup'];
 
 export function middleware(request: NextRequest) {
   const session = cookies().get('user_session')?.value;
+  const { pathname } = request.nextUrl;
 
-  const isProtectedRoute = PROTECTED_ROUTES.some(route => request.nextUrl.pathname.startsWith(route));
-  const isAuthRoute = AUTH_ROUTES.includes(request.nextUrl.pathname);
+  // Check if the current path is one of the protected routes.
+  // Using .includes() on an array of exact paths is more reliable than startsWith().
+  const isProtectedRoute = PROTECTED_ROUTES.includes(pathname);
+  const isAuthRoute = AUTH_ROUTES.includes(pathname);
 
   if (!session && isProtectedRoute) {
     return NextResponse.redirect(new URL('/login', request.url));
