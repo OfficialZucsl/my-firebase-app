@@ -8,11 +8,13 @@ export interface Loan {
   status: 'Active' | 'Paid Off' | 'Overdue' | 'Pending' | 'Rejected';
   nextPaymentDate: string;
   nextPaymentAmount: number;
+  reason?: string;
 }
 
 export interface LoanRequest {
   amount: number;
   durationInWeeks: number;
+  reason: string;
 }
 
 export type TransactionType = 'income' | 'expense';

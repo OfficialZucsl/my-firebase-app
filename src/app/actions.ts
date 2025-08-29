@@ -34,6 +34,7 @@ export async function getLoans(): Promise<Loan[]> {
                 status: data.status || 'Pending',
                 nextPaymentDate: data.nextPaymentDate || 'N/A',
                 nextPaymentAmount: data.nextPaymentAmount || 0,
+                reason: data.reason || 'N/A',
             } as Loan;
         });
         return loansList;
@@ -57,6 +58,7 @@ export async function submitLoanRequest(
       status: 'Pending',
       nextPaymentDate: 'N/A',
       nextPaymentAmount: loanDetails.weeklyPayment,
+      reason: loanDetails.reason,
       createdAt: serverTimestamp(),
     };
 

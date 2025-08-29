@@ -32,6 +32,8 @@ import {
 } from '@/components/ui/chart';
 import { ScrollArea } from './ui/scroll-area';
 import { useLoanStore } from '@/hooks/use-loan-store';
+import { Textarea } from './ui/textarea';
+
 
 const chartConfig = {
   principal: {
@@ -62,6 +64,7 @@ const calculateInterestRate = (durationInWeeks: number) => {
 export function RequestLoanDialog({ children }: { children: React.ReactNode }) {
   const [amount, setAmount] = useState(5000);
   const [durationInWeeks, setDurationInWeeks] = useState(4);
+  const [reason, setReason] = useState('');
   const [loading, setLoading] = useState(false);
   const [open, setOpen] = useState(false);
   const { toast } = useToast();
@@ -95,9 +98,17 @@ export function RequestLoanDialog({ children }: { children: React.ReactNode }) {
   };
 
   const handleSubmit = async () => {
+    if (!reason) {
+        toast({
+          title: 'Error',
+          description: 'Please provide a reason for the loan.',
+          variant: 'destructive',
+        });
+        return;
+    }
     setLoading(true);
     try {
-      const result = await submitLoanRequest({ amount, durationInWeeks, weeklyPayment, interestRate });
+      const result = await submitLoanRequest({ amount, durationInWeeks, reason, weeklyPayment, interestRate });
       if (result.success) {
         addLoan(result.newLoan);
         toast({
@@ -105,6 +116,7 @@ export function RequestLoanDialog({ children }: { children: React.ReactNode }) {
           description: result.message,
         });
         setOpen(false);
+        setReason(''); // Reset reason
       } else {
          toast({
           title: 'Error',
@@ -164,6 +176,16 @@ export function RequestLoanDialog({ children }: { children: React.ReactNode }) {
                 value={[durationInWeeks]}
                 onValueChange={handleDurationChange}
               />
+            </div>
+            <div className="space-y-2">
+                <Label htmlFor="reason">Reason for Loan</Label>
+                <Textarea
+                    id="reason"
+                    placeholder="e.g., School fees, business expansion, emergency medical expenses..."
+                    value={reason}
+                    onChange={(e) => setReason(e.target.value)}
+                    className="min-h-[100px]"
+                />
             </div>
             <div className="mt-4 rounded-lg border bg-muted p-4 space-y-2">
               <h4 className="font-semibold text-sm">Loan Estimate</h4>
