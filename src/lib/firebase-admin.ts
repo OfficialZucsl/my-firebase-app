@@ -11,8 +11,6 @@ function getAdminApp(): admin.app.App {
     return admin.apps[0]!;
   }
 
-  // To avoid issues with parsing a single large JSON string from environment variables,
-  // we initialize using the individual components of the service account key.
   const privateKey = process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n');
 
   if (
@@ -24,22 +22,25 @@ function getAdminApp(): admin.app.App {
       'Firebase environment variables (FIREBASE_PROJECT_ID, FIREBASE_PRIVATE_KEY, FIREBASE_CLIENT_EMAIL) are not set. Server-side Firebase features will be disabled.'
     );
   }
-
+  
   try {
-    return admin.initializeApp({
+    const app = admin.initializeApp({
       credential: admin.credential.cert({
         projectId: process.env.FIREBASE_PROJECT_ID,
         privateKey: privateKey,
         clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
       }),
     });
+    console.log("Firebase Admin SDK initialized successfully.");
+    return app;
   } catch (error: any) {
-    console.error('Error initializing Firebase Admin SDK:', error.message);
+    console.error("Firebase Admin SDK initialization failed:", error.message);
     throw new Error(
       'Could not initialize Firebase Admin SDK. Please check your Firebase environment variables.'
     );
   }
 }
+
 
 export async function getAuthenticatedUser() {
   const session = cookies().get('session')?.value;
