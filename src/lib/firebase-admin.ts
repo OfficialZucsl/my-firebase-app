@@ -1,7 +1,6 @@
 
 'use server';
 
-require('dotenv').config();
 import { initializeApp, getApps, cert, App } from 'firebase-admin/app';
 import { getAuth } from 'firebase-admin/auth';
 import { cookies } from 'next/headers';
