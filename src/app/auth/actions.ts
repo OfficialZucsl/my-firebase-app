@@ -1,7 +1,7 @@
 
 'use server';
-
 import 'dotenv/config';
+
 import { signInWithEmailAndPassword, createUserWithEmailAndPassword } from 'firebase/auth';
 import { auth, db } from '@/lib/firebase';
 import { redirect } from 'next/navigation';
@@ -28,14 +28,13 @@ export async function authenticate(formData: FormData) {
     if (error.message.includes('Firebase Admin SDK is not initialized')) {
         return { error: 'Firebase Admin SDK is not initialized. Cannot create session cookie.' };
     }
-    switch (error.code) {
-        case 'auth/invalid-credential':
-            return { error: 'Invalid email or password. Please try again.' };
-        case 'auth/user-not-found':
-             return { error: 'No user found with this email.' };
-        default:
-            return { error: 'An unknown authentication error occurred.' };
+    // Use a more specific check for the error code if available, otherwise check the message.
+    if (error.code === 'auth/invalid-credential' || error.message.includes('INVALID_LOGIN_CREDENTIALS')) {
+        return { error: 'Invalid email or password. Please try again.' };
     }
+    
+    // Fallback for other errors
+    return { error: `Authentication failed: ${error.message}` };
   }
   
   redirect('/');
@@ -80,14 +79,17 @@ export async function register(formData: FormData) {
      if (error.message.includes('Firebase Admin SDK is not initialized')) {
         return { error: 'Firebase Admin SDK is not initialized. Cannot create session cookie.' };
     }
-    switch (error.code) {
-        case 'auth/email-already-in-use':
-            return { error: 'This email is already registered.' };
-        case 'auth/weak-password':
-            return { error: 'The password is too weak.' };
-        default:
-            return { error: 'An unknown registration error occurred.' };
+    
+    // Use a more specific check for the error code if available.
+    if (error.code === 'auth/email-already-in-use') {
+        return { error: 'This email is already registered.' };
     }
+    if (error.code === 'auth/weak-password') {
+        return { error: 'The password is too weak.' };
+    }
+    
+    // Fallback for other errors
+    return { error: `Registration failed: ${error.message}` };
   }
   
   redirect('/');

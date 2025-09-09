@@ -1,9 +1,6 @@
 
 'use server';
 
-// Use require for dotenv to ensure it runs before anything else
-require('dotenv').config();
-
 import { initializeApp, getApps, cert, App } from 'firebase-admin/app';
 import { getAuth } from 'firebase-admin/auth';
 import { cookies } from 'next/headers';
@@ -14,7 +11,6 @@ function getAdminApp(): App {
     return getApps()[0];
   }
 
-  // Directly read from process.env, which is populated by dotenv
   const serviceAccountKey = process.env.FIREBASE_SERVICE_ACCOUNT_KEY;
 
   if (!serviceAccountKey) {
@@ -46,7 +42,6 @@ export async function getAuthenticatedUser() {
     return decodedIdToken;
   } catch (error) {
     console.error('Error verifying session cookie:', error);
-    // If the session is invalid, try to delete the cookie
     try {
       cookies().delete('session');
     } catch (deleteError) {
