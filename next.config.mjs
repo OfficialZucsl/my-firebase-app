@@ -1,9 +1,10 @@
-
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-    serverRuntimeConfig: {
-        FIREBASE_SERVICE_ACCOUNT_KEY: process.env.FIREBASE_SERVICE_ACCOUNT_KEY,
-    }
+  // Firebase Admin SDK is not compatible with Next.js's edge runtime.
+  // This ensures it is handled correctly in the Node.js server environment.
+  experimental: {
+    serverComponentsExternalPackages: ['firebase-admin'],
+  },
 };
 
 export default nextConfig;

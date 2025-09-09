@@ -5,20 +5,45 @@ import { signInWithEmailAndPassword, createUserWithEmailAndPassword } from 'fire
 import { auth, db } from '@/lib/firebase';
 import { redirect } from 'next/navigation';
 import { doc, setDoc, Timestamp } from 'firebase/firestore';
-import { createSessionCookie } from '@/lib/firebase-admin';
+import { getAdminAuth } from '@/lib/firebase-admin';
 import { cookies } from 'next/headers';
 
-export async function authenticate(formData: FormData) {
-  // --- DEBUGGING LOGS START ---
-  console.log('--- Checking Environment Variables in authenticate action ---');
-  console.log('FIREBASE_PROJECT_ID:', process.env.FIREBASE_PROJECT_ID);
-  console.log('FIREBASE_CLIENT_EMAIL:', process.env.FIREBASE_CLIENT_EMAIL);
-  // Do NOT log the private key for security reasons.
-  // We check if it exists by checking its type.
-  console.log('FIREBASE_PRIVATE_KEY is a string:', typeof process.env.FIREBASE_PRIVATE_KEY === 'string');
-  console.log('---------------------------------------------------------');
-  // --- DEBUGGING LOGS END ---
 
+export async function createSessionCookie(idToken: string) {
+  try {
+    console.log('Attempting to create session cookie...');
+    const auth = getAdminAuth();
+    
+    // Create session cookie (expires in 5 days)
+    const expiresIn = 60 * 60 * 24 * 5 * 1000; // 5 days
+    const sessionCookie = await auth.createSessionCookie(idToken, { expiresIn });
+    
+    // Set the cookie
+    cookies().set('session', sessionCookie, {
+      maxAge: expiresIn,
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      path: '/',
+    });
+    
+    console.log('Session cookie created successfully.');
+    return { success: true };
+    
+  } catch (error: any) {
+    console.error('Session cookie creation failed:', error);
+    // Log environment variables on failure for debugging
+    console.log('Environment check during auth action failure:', {
+      nodeEnv: process.env.NODE_ENV,
+      projectId: process.env.FIREBASE_PROJECT_ID ? 'FOUND' : 'MISSING',
+      privateKey: process.env.FIREBASE_PRIVATE_KEY ? 'FOUND' : 'MISSING',
+      clientEmail: process.env.FIREBASE_CLIENT_EMAIL ? 'FOUND' : 'MISSING',
+    });
+    return { success: false, error: error.message };
+  }
+}
+
+export async function authenticate(formData: FormData) {
   const email = formData.get('email') as string;
   const password = formData.get('password') as string;
 
@@ -30,19 +55,18 @@ export async function authenticate(formData: FormData) {
     const userCredential = await signInWithEmailAndPassword(auth, email, password);
     const idToken = await userCredential.user.getIdToken();
     
-    await createSessionCookie(idToken);
+    const sessionResult = await createSessionCookie(idToken);
+    if (!sessionResult.success) {
+      // The error is already logged in createSessionCookie
+      return { error: 'Could not create a server session. Please check server logs.' };
+    }
 
   } catch (error: any) {
     console.error('Authentication error:', error);
-    if (error.message.includes('Firebase Admin SDK is not initialized')) {
-        return { error: 'Firebase Admin SDK is not initialized. Cannot create session cookie.' };
-    }
-    // Use a more specific check for the error code if available, otherwise check the message.
     if (error.code === 'auth/invalid-credential' || error.message.includes('INVALID_LOGIN_CREDENTIALS')) {
         return { error: 'Invalid email or password. Please try again.' };
     }
     
-    // Fallback for other errors
     return { error: `Authentication failed: ${error.message}` };
   }
   
@@ -81,23 +105,20 @@ export async function register(formData: FormData) {
     
     const idToken = await user.getIdToken();
     
-    await createSessionCookie(idToken);
+    const sessionResult = await createSessionCookie(idToken);
+    if (!sessionResult.success) {
+      return { error: 'Could not create a server session after registration. Please check server logs.' };
+    }
     
   } catch (error: any) {
     console.error('Registration error:', error);
-     if (error.message.includes('Firebase Admin SDK is not initialized')) {
-        return { error: 'Firebase Admin SDK is not initialized. Cannot create session cookie.' };
-    }
-    
-    // Use a more specific check for the error code if available.
-    if (error.code === 'auth/email-already-in-use') {
+     if (error.code === 'auth/email-already-in-use') {
         return { error: 'This email is already registered.' };
     }
     if (error.code === 'auth/weak-password') {
         return { error: 'The password is too weak.' };
     }
     
-    // Fallback for other errors
     return { error: `Registration failed: ${error.message}` };
   }
   
