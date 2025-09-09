@@ -2,13 +2,6 @@
 import { initializeApp, getApps, cert } from 'firebase-admin/app';
 import { getAuth, type User } from 'firebase-admin/auth';
 import { cookies } from 'next/headers';
-import dotenv from 'dotenv';
-import path from 'path';
-
-// Explicitly load the .env file from the project root
-// This path is relative to the `src` directory where this file lives.
-dotenv.config({ path: path.resolve(__dirname, '../../.env') });
-
 
 let adminApp;
 let adminAuth;
