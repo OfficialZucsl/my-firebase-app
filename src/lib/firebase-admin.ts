@@ -1,22 +1,24 @@
 
 'use server';
 
+// Use require for dotenv to ensure it runs before anything else
+require('dotenv').config();
+
 import { initializeApp, getApps, cert, App } from 'firebase-admin/app';
 import { getAuth } from 'firebase-admin/auth';
 import { cookies } from 'next/headers';
 import 'server-only';
-import getConfig from 'next/config';
 
 function getAdminApp(): App {
   if (getApps().length > 0) {
     return getApps()[0];
   }
 
-  const { serverRuntimeConfig } = getConfig();
-  const serviceAccountKey = serverRuntimeConfig.FIREBASE_SERVICE_ACCOUNT_KEY;
+  // Directly read from process.env, which is populated by dotenv
+  const serviceAccountKey = process.env.FIREBASE_SERVICE_ACCOUNT_KEY;
 
   if (!serviceAccountKey) {
-    throw new Error('FIREBASE_SERVICE_ACCOUNT_KEY is not set in next.config.mjs. Server-side Firebase features will be disabled.');
+    throw new Error('FIREBASE_SERVICE_ACCOUNT_KEY is not set in the .env file. Server-side Firebase features will be disabled.');
   }
 
   try {
@@ -25,8 +27,8 @@ function getAdminApp(): App {
       credential: cert(serviceAccount),
     });
   } catch (error) {
-    console.error('Error initializing Firebase Admin SDK:', error);
-    throw new Error('Could not initialize Firebase Admin SDK. Please check your FIREBASE_SERVICE_ACCOUNT_KEY.');
+    console.error('Error parsing FIREBASE_SERVICE_ACCOUNT_KEY:', error);
+    throw new Error('Could not initialize Firebase Admin SDK. Please check that your FIREBASE_SERVICE_ACCOUNT_KEY in the .env file is a valid JSON string.');
   }
 }
 
