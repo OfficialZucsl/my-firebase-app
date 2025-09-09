@@ -1,5 +1,6 @@
 
 'use server';
+import 'dotenv/config';
 
 import { signInWithEmailAndPassword, createUserWithEmailAndPassword } from 'firebase/auth';
 import { auth, db } from '@/lib/firebase';
