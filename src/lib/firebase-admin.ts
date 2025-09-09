@@ -1,33 +1,32 @@
 
 'use server';
 
-import { initializeApp, getApps, cert, App } from 'firebase-admin/app';
+import admin from 'firebase-admin';
 import { getAuth } from 'firebase-admin/auth';
 import { cookies } from 'next/headers';
 import 'server-only';
 
-function getAdminApp(): App {
-  if (getApps().length > 0) {
-    return getApps()[0];
+function getAdminApp(): admin.app.App {
+  if (admin.apps.length > 0) {
+    return admin.apps[0]!;
   }
 
   const serviceAccountKey = process.env.FIREBASE_SERVICE_ACCOUNT_KEY;
 
   if (!serviceAccountKey) {
-    throw new Error('FIREBASE_SERVICE_ACCOUNT_KEY is not set in the .env file. Server-side Firebase features will be disabled.');
+    throw new Error('FIREBASE_SERVICE_ACCOUNT_KEY is not set. Server-side Firebase features will be disabled.');
   }
 
   try {
     const serviceAccount = JSON.parse(serviceAccountKey);
-    return initializeApp({
-      credential: cert(serviceAccount),
+    return admin.initializeApp({
+      credential: admin.credential.cert(serviceAccount),
     });
-  } catch (error) {
-    console.error('Error parsing FIREBASE_SERVICE_ACCOUNT_KEY:', error);
-    throw new Error('Could not initialize Firebase Admin SDK. Please check that your FIREBASE_SERVICE_ACCOUNT_KEY in the .env file is a valid JSON string.');
+  } catch (error: any) {
+    console.error('Error parsing FIREBASE_SERVICE_ACCOUNT_KEY:', error.message);
+    throw new Error('Could not initialize Firebase Admin SDK. Please check that FIREBASE_SERVICE_ACCOUNT_KEY is a valid JSON string.');
   }
 }
-
 
 export async function getAuthenticatedUser() {
   const session = cookies().get('session')?.value;
@@ -42,6 +41,7 @@ export async function getAuthenticatedUser() {
     return decodedIdToken;
   } catch (error) {
     console.error('Error verifying session cookie:', error);
+    // clean up the invalid cookie
     try {
       cookies().delete('session');
     } catch (deleteError) {
