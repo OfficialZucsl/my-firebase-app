@@ -6,7 +6,7 @@ import type { User } from 'firebase-admin/auth';
 import dotenv from 'dotenv';
 import path from 'path';
 
-// Explicitly load the .env file from the root directory
+// Explicitly load the .env file from the project root
 dotenv.config({ path: path.resolve(process.cwd(), '.env') });
 
 
