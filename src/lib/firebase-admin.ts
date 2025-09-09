@@ -6,8 +6,6 @@ import { getAuth } from 'firebase-admin/auth';
 import { cookies } from 'next/headers';
 import 'server-only';
 
-let adminApp: App;
-
 function getAdminApp(): App {
   if (getApps().length > 0) {
     return getApps()[0];
@@ -20,10 +18,9 @@ function getAdminApp(): App {
 
   try {
     const serviceAccount = JSON.parse(serviceAccountKey);
-    adminApp = initializeApp({
+    return initializeApp({
       credential: cert(serviceAccount),
     });
-    return adminApp;
   } catch (error) {
     console.error('Error initializing Firebase Admin SDK:', error);
     throw new Error('Could not initialize Firebase Admin SDK. Please check your FIREBASE_SERVICE_ACCOUNT_KEY.');
