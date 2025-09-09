@@ -1,6 +1,5 @@
-import type {NextConfig} from 'next';
-
-const nextConfig: NextConfig = {
+/** @type {import('next').NextConfig} */
+const nextConfig = {
   /* config options here */
   experimental: {},
   allowedDevOrigins: ['*.cloudworkstations.dev'],
@@ -19,6 +18,10 @@ const nextConfig: NextConfig = {
         pathname: '/**',
       },
     ],
+  },
+  serverRuntimeConfig: {
+    // Will only be available on the server side
+    FIREBASE_SERVICE_ACCOUNT_KEY: process.env.FIREBASE_SERVICE_ACCOUNT_KEY,
   },
 };
 

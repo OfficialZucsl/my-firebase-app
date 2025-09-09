@@ -1,19 +1,21 @@
 'use server';
 
-import 'dotenv/config';
 import { initializeApp, getApps, cert, App } from 'firebase-admin/app';
 import { getAuth } from 'firebase-admin/auth';
 import { cookies } from 'next/headers';
 import 'server-only';
+import getConfig from 'next/config';
 
 function getAdminApp(): App {
   if (getApps().length > 0) {
     return getApps()[0];
   }
 
-  const serviceAccountKey = process.env.FIREBASE_SERVICE_ACCOUNT_KEY;
+  const { serverRuntimeConfig } = getConfig();
+  const serviceAccountKey = serverRuntimeConfig.FIREBASE_SERVICE_ACCOUNT_KEY;
+
   if (!serviceAccountKey) {
-    throw new Error('FIREBASE_SERVICE_ACCOUNT_KEY is not set. Server-side Firebase features will be disabled.');
+    throw new Error('FIREBASE_SERVICE_ACCOUNT_KEY is not set in next.config.mjs. Server-side Firebase features will be disabled.');
   }
 
   try {
