@@ -9,6 +9,16 @@ import { createSessionCookie } from '@/lib/firebase-admin';
 import { cookies } from 'next/headers';
 
 export async function authenticate(formData: FormData) {
+  // --- DEBUGGING LOGS START ---
+  console.log('--- Checking Environment Variables in authenticate action ---');
+  console.log('FIREBASE_PROJECT_ID:', process.env.FIREBASE_PROJECT_ID);
+  console.log('FIREBASE_CLIENT_EMAIL:', process.env.FIREBASE_CLIENT_EMAIL);
+  // Do NOT log the private key for security reasons.
+  // We check if it exists by checking its type.
+  console.log('FIREBASE_PRIVATE_KEY is a string:', typeof process.env.FIREBASE_PRIVATE_KEY === 'string');
+  console.log('---------------------------------------------------------');
+  // --- DEBUGGING LOGS END ---
+
   const email = formData.get('email') as string;
   const password = formData.get('password') as string;
 
