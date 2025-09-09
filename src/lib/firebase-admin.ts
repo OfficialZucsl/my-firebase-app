@@ -5,28 +5,39 @@ import admin from 'firebase-admin';
 import { getAuth } from 'firebase-admin/auth';
 import { cookies } from 'next/headers';
 import 'server-only';
-import getConfig from 'next/config';
 
 function getAdminApp(): admin.app.App {
   if (admin.apps.length > 0) {
     return admin.apps[0]!;
   }
 
-  const { serverRuntimeConfig } = getConfig() || {};
-  const serviceAccountKey = serverRuntimeConfig.FIREBASE_SERVICE_ACCOUNT_KEY;
+  // To avoid issues with parsing a single large JSON string from environment variables,
+  // we initialize using the individual components of the service account key.
+  const privateKey = process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n');
 
-  if (!serviceAccountKey) {
-    throw new Error('FIREBASE_SERVICE_ACCOUNT_KEY is not set in next.config.mjs. Server-side Firebase features will be disabled.');
+  if (
+    !process.env.FIREBASE_PROJECT_ID ||
+    !privateKey ||
+    !process.env.FIREBASE_CLIENT_EMAIL
+  ) {
+    throw new Error(
+      'Firebase environment variables (FIREBASE_PROJECT_ID, FIREBASE_PRIVATE_KEY, FIREBASE_CLIENT_EMAIL) are not set. Server-side Firebase features will be disabled.'
+    );
   }
 
   try {
-    const serviceAccount = JSON.parse(serviceAccountKey);
     return admin.initializeApp({
-      credential: admin.credential.cert(serviceAccount),
+      credential: admin.credential.cert({
+        projectId: process.env.FIREBASE_PROJECT_ID,
+        privateKey: privateKey,
+        clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
+      }),
     });
   } catch (error: any) {
-    console.error('Error parsing FIREBASE_SERVICE_ACCOUNT_KEY:', error.message);
-    throw new Error('Could not initialize Firebase Admin SDK. Please check that FIREBASE_SERVICE_ACCOUNT_KEY is a valid JSON string.');
+    console.error('Error initializing Firebase Admin SDK:', error.message);
+    throw new Error(
+      'Could not initialize Firebase Admin SDK. Please check your Firebase environment variables.'
+    );
   }
 }
 
@@ -39,7 +50,10 @@ export async function getAuthenticatedUser() {
 
   try {
     const app = getAdminApp();
-    const decodedIdToken = await getAuth(app).verifySessionCookie(session, true);
+    const decodedIdToken = await getAuth(app).verifySessionCookie(
+      session,
+      true
+    );
     return decodedIdToken;
   } catch (error) {
     console.error('Error verifying session cookie:', error);
@@ -57,17 +71,24 @@ export async function createSessionCookie(idToken: string) {
   try {
     const app = getAdminApp();
     const expiresIn = 60 * 60 * 24 * 5 * 1000; // 5 days
-    const sessionCookie = await getAuth(app).createSessionCookie(idToken, { expiresIn });
+    const sessionCookie = await getAuth(app).createSessionCookie(idToken, {
+      expiresIn,
+    });
     cookies().set('session', sessionCookie, {
-        maxAge: expiresIn,
-        httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
-        sameSite: 'lax',
+      maxAge: expiresIn,
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
     });
   } catch (error) {
-     if (error instanceof Error && error.message.includes('FIREBASE_SERVICE_ACCOUNT_KEY')) {
-        throw new Error('Firebase Admin SDK is not initialized. Cannot create session cookie.');
-     }
-     throw error;
+    if (
+      error instanceof Error &&
+      error.message.includes('Firebase environment variables')
+    ) {
+      throw new Error(
+        'Firebase Admin SDK is not initialized. Cannot create session cookie.'
+      );
+    }
+    throw error;
   }
 }
