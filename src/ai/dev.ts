@@ -1,4 +1,2 @@
-import { config } from 'dotenv';
-config();
-
+import './genkit';
 import '@/ai/flows/generate-personalized-tips.ts';
