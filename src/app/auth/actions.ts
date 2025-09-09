@@ -1,12 +1,5 @@
 
 'use server';
-import 'dotenv/config';
-import path from 'path';
-import dotenv from 'dotenv';
-
-// Explicitly load .env file from the root of the project
-dotenv.config({ path: path.resolve(process.cwd(), '.env') });
-
 
 import { signInWithEmailAndPassword, createUserWithEmailAndPassword } from 'firebase/auth';
 import { auth, db } from '@/lib/firebase';

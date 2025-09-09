@@ -5,16 +5,18 @@ import admin from 'firebase-admin';
 import { getAuth } from 'firebase-admin/auth';
 import { cookies } from 'next/headers';
 import 'server-only';
+import getConfig from 'next/config';
 
 function getAdminApp(): admin.app.App {
   if (admin.apps.length > 0) {
     return admin.apps[0]!;
   }
 
-  const serviceAccountKey = process.env.FIREBASE_SERVICE_ACCOUNT_KEY;
+  const { serverRuntimeConfig } = getConfig() || {};
+  const serviceAccountKey = serverRuntimeConfig.FIREBASE_SERVICE_ACCOUNT_KEY;
 
   if (!serviceAccountKey) {
-    throw new Error('FIREBASE_SERVICE_ACCOUNT_KEY is not set. Server-side Firebase features will be disabled.');
+    throw new Error('FIREBASE_SERVICE_ACCOUNT_KEY is not set in next.config.mjs. Server-side Firebase features will be disabled.');
   }
 
   try {
