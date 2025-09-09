@@ -45,6 +45,12 @@ export async function createSessionCookie(idToken: string) {
 }
 
 export async function authenticate(formData: FormData) {
+  // STEP 1: Pre-check for environment variables
+  if (!process.env.FIREBASE_PROJECT_ID || !process.env.FIREBASE_CLIENT_EMAIL || !process.env.FIREBASE_PRIVATE_KEY) {
+    console.error('Firebase Admin environment variables are missing!');
+    return { error: 'Server configuration error. Admin credentials not found.' };
+  }
+
   const email = formData.get('email') as string;
   const password = formData.get('password') as string;
 
