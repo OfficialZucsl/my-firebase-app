@@ -1,6 +1,7 @@
 
 'use server';
 
+import 'dotenv/config';
 import { signInWithEmailAndPassword, createUserWithEmailAndPassword } from 'firebase/auth';
 import { auth, db } from '@/lib/firebase';
 import { redirect } from 'next/navigation';
@@ -9,10 +10,6 @@ import { createSessionCookie } from '@/lib/firebase-admin';
 import { cookies } from 'next/headers';
 
 export async function authenticate(formData: FormData) {
-  if (!formData) {
-    return { error: undefined };
-  }
-
   const email = formData.get('email') as string;
   const password = formData.get('password') as string;
 
@@ -28,17 +25,23 @@ export async function authenticate(formData: FormData) {
 
   } catch (error: any) {
     console.error('Authentication error:', error);
-    return { error: error.message || 'An unknown authentication error occurred.' };
+    if (error.message.includes('Firebase Admin SDK is not initialized')) {
+        return { error: 'Firebase Admin SDK is not initialized. Cannot create session cookie.' };
+    }
+    switch (error.code) {
+        case 'auth/invalid-credential':
+            return { error: 'Invalid email or password. Please try again.' };
+        case 'auth/user-not-found':
+             return { error: 'No user found with this email.' };
+        default:
+            return { error: 'An unknown authentication error occurred.' };
+    }
   }
   
   redirect('/');
 }
 
 export async function register(formData: FormData) {
-   if (!formData) {
-    return { error: undefined };
-  }
-  
   const email = formData.get('email') as string;
   const password = formData.get('password') as string;
   const name = formData.get('name') as string;
@@ -74,7 +77,17 @@ export async function register(formData: FormData) {
     
   } catch (error: any) {
     console.error('Registration error:', error);
-    return { error: error.message || 'An unknown registration error occurred.' };
+     if (error.message.includes('Firebase Admin SDK is not initialized')) {
+        return { error: 'Firebase Admin SDK is not initialized. Cannot create session cookie.' };
+    }
+    switch (error.code) {
+        case 'auth/email-already-in-use':
+            return { error: 'This email is already registered.' };
+        case 'auth/weak-password':
+            return { error: 'The password is too weak.' };
+        default:
+            return { error: 'An unknown registration error occurred.' };
+    }
   }
   
   redirect('/');
