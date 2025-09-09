@@ -1,13 +1,13 @@
 // lib/firebase-admin.js
 import { initializeApp, getApps, cert } from 'firebase-admin/app';
-import { getAuth } from 'firebase-admin/auth';
+import { getAuth, type User } from 'firebase-admin/auth';
 import { cookies } from 'next/headers';
-import type { User } from 'firebase-admin/auth';
 import dotenv from 'dotenv';
 import path from 'path';
 
 // Explicitly load the .env file from the project root
-dotenv.config({ path: path.resolve(process.cwd(), '.env') });
+// This path is relative to the `src` directory where this file lives.
+dotenv.config({ path: path.resolve(__dirname, '../../.env') });
 
 
 let adminApp;
