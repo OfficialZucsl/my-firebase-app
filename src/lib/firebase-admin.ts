@@ -3,6 +3,12 @@ import { initializeApp, getApps, cert } from 'firebase-admin/app';
 import { getAuth } from 'firebase-admin/auth';
 import { cookies } from 'next/headers';
 import type { User } from 'firebase-admin/auth';
+import dotenv from 'dotenv';
+import path from 'path';
+
+// Explicitly load the .env file from the root directory
+dotenv.config({ path: path.resolve(process.cwd(), '.env') });
+
 
 let adminApp;
 let adminAuth;
@@ -26,6 +32,10 @@ function initializeFirebaseAdmin() {
     // Method 1: Using individual environment variables
     const privateKey = process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n');
     
+    if (!process.env.FIREBASE_PROJECT_ID || !privateKey || !process.env.FIREBASE_CLIENT_EMAIL) {
+      throw new Error('Firebase credentials are not set in the environment. Please check your .env file.');
+    }
+
     const credential = cert({
       projectId: process.env.FIREBASE_PROJECT_ID,
       privateKey: privateKey,
