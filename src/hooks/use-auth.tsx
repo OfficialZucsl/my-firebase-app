@@ -1,81 +1,58 @@
-
 'use client';
 
 import React, { createContext, useState, useContext, useEffect, ReactNode } from 'react';
 import { useRouter } from 'next/navigation';
-import { onAuthStateChanged, User as FirebaseUser } from 'firebase/auth';
-import { auth } from '@/lib/firebase';
-import { logout as serverLogout } from '@/app/auth/actions';
 
-// Define the shape of the context data
 interface AuthContextType {
-  user: { uid: string; email: string | null, displayName: string | null } | null;
-  login: (userData: { uid: string; email: string | null, displayName: string | null }) => void;
+  user: { uid: string; email: string | null } | null;
+  login: (userData: { uid: string; email: string | null }) => void;
   logout: () => void;
   loading: boolean;
 }
 
-// Create the context with a default undefined value
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-// AuthProvider component that will wrap our application
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
-  const [user, setUser] = useState<{ uid: string; email: string | null; displayName: string | null } | null>(null);
+  const [user, setUser] = useState<{ uid: string; email: string | null } | null>(null);
   const [loading, setLoading] = useState(true); // Start in a loading state
   const router = useRouter();
 
-  // This effect runs once on mount to check the initial Firebase auth state
-  // This is for handling page reloads where the user is already logged in.
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (firebaseUser: FirebaseUser | null) => {
-      if (firebaseUser) {
-        console.log('[AuthProvider] onAuthStateChanged: User is logged in.', firebaseUser);
-        setUser({
-          uid: firebaseUser.uid,
-          email: firebaseUser.email,
-          displayName: firebaseUser.displayName,
-        });
-      } else {
-        console.log('[AuthProvider] onAuthStateChanged: User is logged out.');
-        setUser(null);
+    // This effect runs once on app load to check for an existing session
+    const checkUserSession = async () => {
+      try {
+        const response = await fetch('/api/auth/me');
+        const data = await response.json();
+        if (data.user) {
+          setUser(data.user);
+        }
+      } catch (error) {
+        console.error('Failed to fetch user session:', error);
+      } finally {
+        setLoading(false); // Stop loading once the check is complete
       }
-      setLoading(false);
-    });
-
-    // Cleanup subscription on unmount
-    return () => unsubscribe();
+    };
+    checkUserSession();
   }, []);
 
-
-  // The login function that the login page calls
-  const login = (userData: { uid: string; email: string | null; displayName: string | null }) => {
-    console.log('[AuthProvider] Login function called. Setting user:', userData);
+  const login = (userData: { uid: string; email: string | null }) => {
     setUser(userData);
+    // The navigation now uses a hard reload to ensure middleware has the cookie
+    window.location.href = '/'; 
   };
 
-  // A logout function for completeness
   const logout = async () => {
-    console.log('[AuthProvider] Logout function called.');
-    await serverLogout(); // Clears the server session cookie
-    await auth.signOut(); // Signs out the client
+    // You would create a '/api/auth/logout' route to clear the httpOnly cookie
     setUser(null);
-    router.push('/login');
+    window.location.href = '/login';
   };
-  
-  // This is the CRITICAL part that fixes the navigation on LOGIN
-  useEffect(() => {
-    console.log(`[AuthProvider] useEffect triggered by user state change. User is:`, user);
-    
-    // If the user state changes from null to a real user object, it means
-    // a login just occurred. NOW we can safely navigate.
-    if (user && !loading) {
-      console.log('[AuthProvider] User detected, navigating to dashboard...');
-      window.location.href = '/';
-    }
-
-  }, [user, loading, router]); // This effect runs whenever the user or loading state changes
 
   const value = { user, login, logout, loading };
+
+  // Don't render the rest of the app until the session check is complete
+  if (loading) {
+    return null; // Or a loading spinner component
+  }
 
   return (
     <AuthContext.Provider value={value}>
@@ -84,7 +61,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   );
 };
 
-// Custom hook to use the auth context easily in other components
 export const useAuth = () => {
   const context = useContext(AuthContext);
   if (context === undefined) {
