@@ -12,14 +12,14 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { AlertCircle, Loader2 } from 'lucide-react';
 import { signInWithEmailAndPassword } from 'firebase/auth';
 import { auth } from '@/lib/firebase';
-import { useRouter } from 'next/navigation';
+import { useAuth } from '@/hooks/use-auth';
 
 export default function LoginPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [errorMessage, setErrorMessage] = useState<string | undefined>(undefined);
   const [loading, setLoading] = useState(false);
-  const router = useRouter();
+  const { login } = useAuth();
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -39,15 +39,16 @@ export default function LoginPage() {
         },
         body: JSON.stringify({ idToken }),
       });
+      
+      const data = await response.json();
 
       if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Session creation failed.');
+        throw new Error(data.error || 'Session creation failed.');
       }
-
-      // On successful session creation, navigate to the dashboard.
-      // The AuthProvider will also detect the state change and ensure consistency.
-      router.push('/');
+      
+      // Update the auth context with the user from the server response.
+      // The AuthProvider will handle the navigation.
+      login(data.user);
 
     } catch (error: any) {
       console.error('Full authentication error:', error);
