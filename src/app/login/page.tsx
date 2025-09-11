@@ -58,7 +58,7 @@ export default function LoginPage() {
       console.error('Full authentication error:', error);
       // This will now catch Firebase auth errors, network errors, and our custom server error
        if (error.code === 'auth/invalid-credential' || error.code === 'auth/wrong-password' || error.code === 'auth/user-not-found') {
-        setErrorMessage('Invalid email or password.');
+        setErrorMessage('Invalid email or password. Please check your credentials and try again.');
       } else {
         // Use a more generic but informative message from the caught error
         setErrorMessage(error.message || 'An unexpected error occurred during login.');
