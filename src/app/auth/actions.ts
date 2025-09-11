@@ -1,6 +1,7 @@
 
 'use server';
-import 'dotenv/config';
+import dotenv from 'dotenv';
+import path from 'path';
 
 import { signInWithEmailAndPassword, createUserWithEmailAndPassword } from 'firebase/auth';
 import { auth, db } from '@/lib/firebase';
@@ -8,9 +9,9 @@ import { redirect } from 'next/navigation';
 import { doc, setDoc, Timestamp } from 'firebase/firestore';
 import { getAdminAuth } from '@/lib/firebase-admin';
 import { cookies } from 'next/headers';
-import fs from 'fs';
-import path from 'path';
 
+// Explicitly load .env file from the project root
+dotenv.config({ path: path.resolve(process.cwd(), '.env') });
 
 export async function createSessionCookie(idToken: string) {
   try {
@@ -42,24 +43,38 @@ export async function createSessionCookie(idToken: string) {
       privateKey: process.env.FIREBASE_PRIVATE_KEY ? 'FOUND' : 'MISSING',
       clientEmail: process.env.FIREBASE_CLIENT_EMAIL ? 'FOUND' : 'MISSING',
     });
-    return { success: false, error: error.message };
+    return { success: false, error: 'Could not create a server session. Please check server logs.' };
   }
 }
 
 export async function authenticate(formData: FormData) {
-  // STEP 1: Diagnostic Logging and UI Feedback
-  try {
-    const cwd = process.cwd();
-    const files = fs.readdirSync(cwd);
-    const diagnosticMessage = `CWD: ${cwd} | Files: [${files.join(', ')}]`;
-    
-    // Return this diagnostic info as an error to see it in the UI
-    return { error: diagnosticMessage };
-    
-  } catch (e: any) {
-    // If reading the directory fails, show that error
-    return { error: `Error reading directory: ${e.message}` };
+  const email = formData.get('email') as string;
+  const password = formData.get('password') as string;
+  
+  // Final check for environment variables before attempting login
+  if (!process.env.FIREBASE_PROJECT_ID || !process.env.FIREBASE_PRIVATE_KEY || !process.env.FIREBASE_CLIENT_EMAIL) {
+    return { error: 'Server configuration error. Admin credentials not found.' };
   }
+
+  try {
+    const userCredential = await signInWithEmailAndPassword(auth, email, password);
+    const user = userCredential.user;
+    const idToken = await user.getIdToken();
+
+    const sessionResult = await createSessionCookie(idToken);
+    if (!sessionResult.success) {
+      return { error: sessionResult.error };
+    }
+
+  } catch (error: any) {
+    console.error('Authentication error:', error);
+    if (error.code === 'auth/invalid-credential' || error.code === 'auth/wrong-password' || error.code === 'auth/user-not-found') {
+        return { error: 'Invalid email or password.' };
+    }
+    return { error: `An unexpected error occurred: ${error.message}` };
+  }
+
+  redirect('/');
 }
 
 export async function register(formData: FormData) {
