@@ -12,11 +12,13 @@ let initializationPromise: Promise<{ app: App; auth: Auth }> | null = null;
 async function initializeFirebaseAdmin(): Promise<{ app: App; auth: Auth }> {
   // If already initialized, return existing instances
   if (adminApp && adminAuth) {
+    console.log('Firebase Admin already initialized, using existing instance');
     return { app: adminApp, auth: adminAuth };
   }
 
   // If initialization is in progress, wait for it
   if (initializationPromise) {
+    console.log('Firebase Admin initialization in progress, waiting...');
     return initializationPromise;
   }
 
@@ -33,7 +35,7 @@ async function initializeFirebaseAdmin(): Promise<{ app: App; auth: Auth }> {
         return { app: adminApp, auth: adminAuth };
       }
 
-      const privateKey = process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n');
+      const privateKey = process.env.FIREBASE_PRIVATE_KEY;
       const projectId = process.env.FIREBASE_PROJECT_ID;
       const clientEmail = process.env.FIREBASE_CLIENT_EMAIL;
 
@@ -46,7 +48,7 @@ async function initializeFirebaseAdmin(): Promise<{ app: App; auth: Auth }> {
       const credential = cert({
         projectId,
         clientEmail,
-        privateKey,
+        privateKey: privateKey.replace(/\\n/g, '\n'),
       });
 
       console.log('Initializing Firebase app...');
@@ -54,6 +56,9 @@ async function initializeFirebaseAdmin(): Promise<{ app: App; auth: Auth }> {
       adminAuth = getAuth(adminApp);
 
       console.log('Firebase Admin initialized successfully');
+      console.log('App name:', adminApp.name);
+      console.log('Project ID:', adminApp.options.projectId);
+
 
       return { app: adminApp, auth: adminAuth };
 
@@ -93,3 +98,38 @@ export async function getAuthenticatedUser() {
     return null;
   }
 }
+
+export async function createSessionCookieFromToken(idToken: string) {
+    console.log('\n--- createSessionCookieFromToken START ---');
+    console.log('ID token received, length:', idToken.length);
+    
+    try {
+      console.log('Getting admin auth...');
+      const auth = await getAdminAuth();
+      console.log('Admin auth obtained successfully');
+      console.log('Auth app name:', auth.app.name);
+      
+      console.log('Setting expiration time...');
+      const expiresIn = 60 * 60 * 24 * 5 * 1000; // 5 days
+      console.log('Expires in:', expiresIn, 'ms');
+      
+      console.log('Calling auth.createSessionCookie...');
+      const sessionCookie = await auth.createSessionCookie(idToken, { expiresIn });
+      
+      console.log('Session cookie created successfully!');
+      console.log('Session cookie length:', sessionCookie.length);
+      console.log('--- createSessionCookieFromToken SUCCESS ---\n');
+      
+      return sessionCookie;
+      
+    } catch (error: any) {
+      console.error('\n--- createSessionCookieFromToken ERROR ---');
+      console.error('Error at createSessionCookie step');
+      console.error('Error type:', error.constructor.name);
+      console.error('Error message:', error.message);
+      console.error('Error code:', error.code);
+      console.error('Error details:', error);
+      console.error('--- END createSessionCookieFromToken ERROR ---\n');
+      throw error;
+    }
+  }
