@@ -45,11 +45,6 @@ export async function createSessionCookie(idToken: string) {
 export async function authenticate(formData: FormData) {
   const email = formData.get('email') as string;
   const password = formData.get('password') as string;
-  
-  // Final check for environment variables before attempting login
-  if (!process.env.FIREBASE_PROJECT_ID || !process.env.FIREBASE_PRIVATE_KEY || !process.env.FIREBASE_CLIENT_EMAIL) {
-    return { error: 'Server configuration error. Admin credentials not found.' };
-  }
 
   try {
     const userCredential = await signInWithEmailAndPassword(auth, email, password);
@@ -61,7 +56,7 @@ export async function authenticate(formData: FormData) {
       return { error: sessionResult.error };
     }
 
-  } catch (error: any) {
+  } catch (error: any)
     console.error('Authentication error:', error);
     if (error.code === 'auth/invalid-credential' || error.code === 'auth/wrong-password' || error.code === 'auth/user-not-found') {
         return { error: 'Invalid email or password.' };
