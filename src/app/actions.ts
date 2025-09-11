@@ -23,7 +23,7 @@ export async function getLoans(userId: string): Promise<Loan[]> {
     try {
         if (!userId) return [];
         const loansCollection = collection(db, 'loans');
-        const q = query(loansCollection, where('userId', '==', userId), orderBy('createdAt', 'desc'));
+        const q = query(loansCollection, where('userId', '==', userId), orderBy('applicationDate', 'desc'));
         const loanSnapshot = await getDocs(q);
         const loansList = loanSnapshot.docs.map(doc => {
             const data = doc.data();
@@ -62,14 +62,14 @@ export async function submitLoanRequest(
       nextPaymentDate: 'N/A',
       nextPaymentAmount: loanDetails.weeklyPayment,
       reason: loanDetails.reason,
-      createdAt: serverTimestamp(),
+      applicationDate: serverTimestamp(),
     };
 
     await addDoc(collection(db, 'loans'), newLoanData);
 
     const newLoan: Loan = {
       ...newLoanData,
-      createdAt: undefined, 
+      applicationDate: undefined, 
     };
 
     return {
