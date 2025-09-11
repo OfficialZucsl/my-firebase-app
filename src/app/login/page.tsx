@@ -49,6 +49,7 @@ export default function LoginPage() {
       // Update the auth context with the user from the server response.
       // The AuthProvider will handle the navigation.
       login(data.user);
+      console.log('Login successful, user data passed to auth context:', data.user);
 
     } catch (error: any) {
       console.error('Full authentication error:', error);
