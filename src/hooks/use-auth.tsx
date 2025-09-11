@@ -70,7 +70,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     // a login just occurred. NOW we can safely navigate.
     if (user && !loading) {
       console.log('[AuthProvider] User detected, navigating to dashboard...');
-      router.push('/');
+      window.location.href = '/';
     }
 
   }, [user, loading, router]); // This effect runs whenever the user or loading state changes
