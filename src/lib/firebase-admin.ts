@@ -1,8 +1,13 @@
-
 // src/lib/firebase-admin.ts
 import { initializeApp, getApps, cert, App } from 'firebase-admin/app';
 import { getAuth, Auth } from 'firebase-admin/auth';
 import { cookies } from 'next/headers';
+import { config } from 'dotenv';
+import path from 'path';
+
+// Explicitly load .env file from the project root
+config({ path: path.resolve(process.cwd(), '.env') });
+
 
 // Global singleton variables to ensure the SDK is initialized only once
 let adminApp: App | null = null;
@@ -12,24 +17,19 @@ let initializationPromise: Promise<{ app: App; auth: Auth }> | null = null;
 async function initializeFirebaseAdmin(): Promise<{ app: App; auth: Auth }> {
   // If already initialized, return existing instances
   if (adminApp && adminAuth) {
-    console.log('Firebase Admin already initialized, using existing instance');
     return { app: adminApp, auth: adminAuth };
   }
 
   // If initialization is in progress, wait for it
   if (initializationPromise) {
-    console.log('Firebase Admin initialization in progress, waiting...');
     return initializationPromise;
   }
 
   // Start new initialization
   initializationPromise = (async () => {
     try {
-      console.log('Starting Firebase Admin initialization...');
-      
       const existingApps = getApps();
       if (existingApps.length > 0) {
-        console.log('Found existing Firebase app, using it');
         adminApp = existingApps[0];
         adminAuth = getAuth(adminApp);
         return { app: adminApp, auth: adminAuth };
@@ -42,8 +42,6 @@ async function initializeFirebaseAdmin(): Promise<{ app: App; auth: Auth }> {
       if (!projectId || !privateKey || !clientEmail) {
         throw new Error(`Missing Firebase credentials: ${!projectId ? 'PROJECT_ID ' : ''}${!privateKey ? 'PRIVATE_KEY ' : ''}${!clientEmail ? 'CLIENT_EMAIL' : ''}`);
       }
-
-      console.log('All Firebase credentials found, creating credential...');
       
       const credential = cert({
         projectId,
@@ -51,14 +49,8 @@ async function initializeFirebaseAdmin(): Promise<{ app: App; auth: Auth }> {
         privateKey: privateKey.replace(/\\n/g, '\n'),
       });
 
-      console.log('Initializing Firebase app...');
       adminApp = initializeApp({ credential });
       adminAuth = getAuth(adminApp);
-
-      console.log('Firebase Admin initialized successfully');
-      console.log('App name:', adminApp.name);
-      console.log('Project ID:', adminApp.options.projectId);
-
 
       return { app: adminApp, auth: adminAuth };
 
@@ -100,36 +92,13 @@ export async function getAuthenticatedUser() {
 }
 
 export async function createSessionCookieFromToken(idToken: string) {
-    console.log('\n--- createSessionCookieFromToken START ---');
-    console.log('ID token received, length:', idToken.length);
-    
     try {
-      console.log('Getting admin auth...');
       const auth = await getAdminAuth();
-      console.log('Admin auth obtained successfully');
-      console.log('Auth app name:', auth.app.name);
-      
-      console.log('Setting expiration time...');
       const expiresIn = 60 * 60 * 24 * 5 * 1000; // 5 days
-      console.log('Expires in:', expiresIn, 'ms');
-      
-      console.log('Calling auth.createSessionCookie...');
       const sessionCookie = await auth.createSessionCookie(idToken, { expiresIn });
-      
-      console.log('Session cookie created successfully!');
-      console.log('Session cookie length:', sessionCookie.length);
-      console.log('--- createSessionCookieFromToken SUCCESS ---\n');
-      
       return sessionCookie;
-      
     } catch (error: any) {
-      console.error('\n--- createSessionCookieFromToken ERROR ---');
-      console.error('Error at createSessionCookie step');
-      console.error('Error type:', error.constructor.name);
-      console.error('Error message:', error.message);
-      console.error('Error code:', error.code);
-      console.error('Error details:', error);
-      console.error('--- END createSessionCookieFromToken ERROR ---\n');
+      console.error('Error creating session cookie:', error);
       throw error;
     }
   }
