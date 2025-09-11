@@ -43,10 +43,18 @@ export default function LoginPage() {
         body: JSON.stringify({ idToken }),
       });
 
-      // 4. Check if the session creation was successful
+      // 4. Check if the session creation was successful on the server
       if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Session creation failed.');
+        // If the server returned an error, it might be HTML. Read as text.
+        const errorText = await response.text();
+        console.error('Server responded with an error:', response.status, errorText);
+        // Try to parse it as JSON, but fall back to the raw text if that fails.
+        try {
+            const errorJson = JSON.parse(errorText);
+            throw new Error(errorJson.error || 'Session creation failed on the server.');
+        } catch (e) {
+            throw new Error(`Server error: ${response.status}. Check server logs for details.`);
+        }
       }
 
       // 5. If successful, navigate to the dashboard using a full page reload
@@ -55,7 +63,7 @@ export default function LoginPage() {
 
     } catch (error: any) {
       console.error('Full authentication error:', error);
-      if (error.code === 'auth/invalid-credential' || (error.message && error.message.includes('auth/invalid-credential'))) {
+      if (error.code === 'auth/invalid-credential') {
         setErrorMessage('Invalid email or password. Please try again.');
       } else {
         setErrorMessage(error.message || 'An unexpected error occurred during login.');
