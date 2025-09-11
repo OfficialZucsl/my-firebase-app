@@ -8,6 +8,8 @@ import { redirect } from 'next/navigation';
 import { doc, setDoc, Timestamp } from 'firebase/firestore';
 import { getAdminAuth } from '@/lib/firebase-admin';
 import { cookies } from 'next/headers';
+import fs from 'fs';
+import path from 'path';
 
 
 export async function createSessionCookie(idToken: string) {
@@ -45,7 +47,18 @@ export async function createSessionCookie(idToken: string) {
 }
 
 export async function authenticate(formData: FormData) {
-  // STEP 1: Pre-check for environment variables
+  // STEP 1: Diagnostic Logging
+  try {
+    const cwd = process.cwd();
+    console.log('DIAGNOSTIC: Current working directory is:', cwd);
+    const files = fs.readdirSync(cwd);
+    console.log('DIAGNOSTIC: Files in CWD:', files);
+  } catch (e: any) {
+    console.error('DIAGNOSTIC: Error reading directory:', e.message);
+  }
+
+
+  // STEP 2: Pre-check for environment variables
   if (!process.env.FIREBASE_PROJECT_ID || !process.env.FIREBASE_CLIENT_EMAIL || !process.env.FIREBASE_PRIVATE_KEY) {
     console.error('Firebase Admin environment variables are missing!');
     return { error: 'Server configuration error. Admin credentials not found.' };
