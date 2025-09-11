@@ -47,50 +47,19 @@ export async function createSessionCookie(idToken: string) {
 }
 
 export async function authenticate(formData: FormData) {
-  // STEP 1: Diagnostic Logging
+  // STEP 1: Diagnostic Logging and UI Feedback
   try {
     const cwd = process.cwd();
-    console.log('DIAGNOSTIC: Current working directory is:', cwd);
     const files = fs.readdirSync(cwd);
-    console.log('DIAGNOSTIC: Files in CWD:', files);
+    const diagnosticMessage = `CWD: ${cwd} | Files: [${files.join(', ')}]`;
+    
+    // Return this diagnostic info as an error to see it in the UI
+    return { error: diagnosticMessage };
+    
   } catch (e: any) {
-    console.error('DIAGNOSTIC: Error reading directory:', e.message);
+    // If reading the directory fails, show that error
+    return { error: `Error reading directory: ${e.message}` };
   }
-
-
-  // STEP 2: Pre-check for environment variables
-  if (!process.env.FIREBASE_PROJECT_ID || !process.env.FIREBASE_CLIENT_EMAIL || !process.env.FIREBASE_PRIVATE_KEY) {
-    console.error('Firebase Admin environment variables are missing!');
-    return { error: 'Server configuration error. Admin credentials not found.' };
-  }
-
-  const email = formData.get('email') as string;
-  const password = formData.get('password') as string;
-
-  if (!email || !password) {
-    return { error: 'Email and password are required.' };
-  }
-
-  try {
-    const userCredential = await signInWithEmailAndPassword(auth, email, password);
-    const idToken = await userCredential.user.getIdToken();
-    
-    const sessionResult = await createSessionCookie(idToken);
-    if (!sessionResult.success) {
-      // The error is already logged in createSessionCookie
-      return { error: 'Could not create a server session. Please check server logs.' };
-    }
-
-  } catch (error: any) {
-    console.error('Authentication error:', error);
-    if (error.code === 'auth/invalid-credential' || error.message.includes('INVALID_LOGIN_CREDENTIALS')) {
-        return { error: 'Invalid email or password. Please try again.' };
-    }
-    
-    return { error: `Authentication failed: ${error.message}` };
-  }
-  
-  redirect('/');
 }
 
 export async function register(formData: FormData) {
