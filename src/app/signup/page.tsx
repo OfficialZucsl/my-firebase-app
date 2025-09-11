@@ -21,13 +21,17 @@ export default function SignupPage() {
   const router = useRouter();
 
   useEffect(() => {
-    // This effect handles creating the session cookie after a successful registration and redirect.
+    // This effect handles creating the session cookie after a successful registration.
+    // The `register` server action sets a temporary cookie 'login_success'.
     const wasRegistrationSuccessful = document.cookie.includes('login_success=true');
     
     if (wasRegistrationSuccessful) {
       const unsubscribe = onAuthStateChanged(auth, async (user) => {
         if (user) {
           try {
+            // Unsubscribe immediately to prevent multiple runs
+            unsubscribe();
+            
             const idToken = await user.getIdToken();
             const response = await fetch('/api/auth/session', {
               method: 'POST',
@@ -41,7 +45,9 @@ export default function SignupPage() {
 
             // Clear the temporary cookie
             document.cookie = 'login_success=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
-            // Use router.push for a client-side navigation to the dashboard
+            
+            // The AuthProvider will handle the redirect to '/', but we can push here as well
+            // to ensure a swift navigation.
             router.push('/'); 
             
           } catch (error) {
@@ -62,6 +68,8 @@ export default function SignupPage() {
     if (result?.error) {
       setErrorMessage(result.error);
     }
+    // No redirect here. The useEffect handles it after the form action completes
+    // and the page reloads.
   };
 
   return (

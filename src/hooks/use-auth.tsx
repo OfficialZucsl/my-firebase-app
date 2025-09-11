@@ -1,9 +1,10 @@
+
 'use client';
 
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
 import { User, onAuthStateChanged } from 'firebase/auth';
 import { auth } from '@/lib/firebase';
-import { useRouter } from 'next/navigation';
+import { useRouter, usePathname } from 'next/navigation';
 import { logout as serverLogout } from '@/app/auth/actions';
 
 interface AuthContextType {
@@ -22,20 +23,33 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const router = useRouter();
+  const pathname = usePathname();
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
       setUser(user);
       setLoading(false);
+
+      // This is our safety net. If the user is authenticated but somehow
+      // ends up on a public page (like /login), we redirect them to the dashboard.
+      const isPublicRoute = ['/login', '/signup'].includes(pathname);
+      if (user && isPublicRoute) {
+        router.push('/');
+      }
     });
 
     return () => unsubscribe();
-  }, []);
+  }, [router, pathname]);
 
   const logout = async () => {
     try {
+      // Sign out from Firebase on the client
+      await auth.signOut();
+      // Then, call the server action to clear the session cookie
       await serverLogout();
-      router.refresh();
+      // The middleware will handle the redirect after this.
+      // A hard refresh ensures the middleware runs.
+      window.location.href = '/login';
     } catch (error) {
       console.error('Logout error:', error);
     }

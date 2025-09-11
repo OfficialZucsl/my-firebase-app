@@ -27,14 +27,11 @@ export default function LoginPage() {
     setErrorMessage(undefined);
 
     try {
-      // 1. Authenticate with Firebase on the client
       const userCredential = await signInWithEmailAndPassword(auth, email, password);
       const user = userCredential.user;
 
-      // 2. Get the ID token
       const idToken = await user.getIdToken();
 
-      // 3. Send the token to our API route to create a session cookie
       const response = await fetch('/api/auth/session', {
         method: 'POST',
         headers: {
@@ -43,24 +40,14 @@ export default function LoginPage() {
         body: JSON.stringify({ idToken }),
       });
 
-      // 4. Check if the session creation was successful on the server
       if (!response.ok) {
-        // If the server returned an error, it might be HTML. Read as text.
-        const errorText = await response.text();
-        console.error('Server responded with an error:', response.status, errorText);
-        // Try to parse it as JSON, but fall back to the raw text if that fails.
-        try {
-            const errorJson = JSON.parse(errorText);
-            throw new Error(errorJson.error || 'Session creation failed on the server.');
-        } catch (e) {
-            throw new Error(`Server error: ${response.status}. Check server logs for details.`);
-        }
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Session creation failed.');
       }
 
-      // 5. If successful, the onAuthStateChanged listener in AuthProvider will handle the redirect.
-      // We no longer need to force a redirect here. The UI will update reactively.
-       router.push('/');
-
+      // On successful session creation, navigate to the dashboard.
+      // The AuthProvider will also detect the state change and ensure consistency.
+      router.push('/');
 
     } catch (error: any) {
       console.error('Full authentication error:', error);
