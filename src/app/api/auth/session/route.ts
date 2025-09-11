@@ -1,6 +1,6 @@
 
 import { NextResponse, type NextRequest } from 'next/server';
-import { createSessionCookieFromToken, getAdminAuth } from '@/lib/firebase-admin';
+import { getAdminAuth } from '@/lib/firebase-admin';
 
 // CRITICAL: Force this route to run on the Node.js runtime.
 // The 'firebase-admin' SDK is not compatible with the Edge runtime.
@@ -25,22 +25,30 @@ export async function POST(request: NextRequest) {
     const sessionCookie = await auth.createSessionCookie(idToken, { expiresIn });
     const user = await auth.getUser(decodedToken.uid);
 
-    const response = new Response(
-      JSON.stringify({ 
+    const options = {
+        maxAge: expiresIn,
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        path: '/',
+        sameSite: 'lax' as const,
+    };
+    
+    const response = NextResponse.json(
+      { 
         success: true,
         user: {
             uid: user.uid,
             email: user.email,
             displayName: user.displayName,
         }
-      }),
+      },
       {
         status: 200,
         headers: { 'Content-Type': 'application/json' },
       }
     );
 
-    response.headers.append('Set-Cookie', `session=${sessionCookie}; Max-Age=${expiresIn / 1000}; HttpOnly; Secure; Path=/; SameSite=Lax`);
+    response.cookies.set('session', sessionCookie, options);
     
     return response;
 
