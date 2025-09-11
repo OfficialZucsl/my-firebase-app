@@ -44,23 +44,19 @@ export default function LoginPage() {
       });
 
       if (!response.ok) {
-        // This block handles server errors (like 500, 404) robustly
         const errorText = await response.text();
         console.error('Server error response (raw):', errorText);
-        // Truncate for UI display to avoid showing a huge HTML page
         throw new Error(`Server responded with status ${response.status}: ${errorText.substring(0, 300)}...`);
       }
 
-      // 4. If successful, refresh the page to be redirected by middleware
-      router.refresh();
+      // 4. If successful, redirect to the dashboard
+      router.push('/');
 
     } catch (error: any) {
       console.error('Full authentication error:', error);
-      // This will now catch Firebase auth errors, network errors, and our custom server error
-       if (error.code === 'auth/invalid-credential' || error.code === 'auth/wrong-password' || error.code === 'auth/user-not-found') {
-        setErrorMessage('Invalid email or password. Please check your credentials and try again.');
+      if (error.code === 'auth/invalid-credential') {
+        setErrorMessage('Invalid email or password. Please try again.');
       } else {
-        // Use a more generic but informative message from the caught error
         setErrorMessage(error.message || 'An unexpected error occurred during login.');
       }
     } finally {
