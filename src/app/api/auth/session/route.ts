@@ -2,6 +2,10 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import { createSessionCookieFromToken } from '@/lib/firebase-admin';
 
+// CRITICAL: Force this route to run on the Node.js runtime.
+// The 'firebase-admin' SDK is not compatible with the Edge runtime.
+export const runtime = 'nodejs';
+
 export async function POST(request: NextRequest) {
   console.log('\n=== SESSION API ROUTE START ===');
   console.log('Time:', new Date().toISOString());
@@ -27,11 +31,9 @@ export async function POST(request: NextRequest) {
     console.log('Step 2: ID token found, length:', idToken.length);
     console.log('ID token preview:', idToken.substring(0, 50) + '...');
 
-    console.log('Step 3: Environment check...');
+    console.log('Step 3: Environment check (from within API route)...');
     console.log('NODE_ENV:', process.env.NODE_ENV);
     console.log('FIREBASE_PROJECT_ID exists:', !!process.env.FIREBASE_PROJECT_ID);
-    console.log('FIREBASE_CLIENT_EMAIL exists:', !!process.env.FIREBASE_CLIENT_EMAIL);
-    console.log('FIREBASE_PRIVATE_KEY exists:', !!process.env.FIREBASE_PRIVATE_KEY);
     
     console.log('Step 4: Attempting to create session cookie...');
     
