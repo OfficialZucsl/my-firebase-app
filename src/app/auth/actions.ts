@@ -39,7 +39,7 @@ export async function register(formData: FormData) {
     
     // After registration, the user will be logged in on the client.
     // We will set a temporary cookie to signal the client to create the session.
-    cookies().set('login_success', 'true', { maxAge: 10 });
+    cookies().set('login_success', 'true', { maxAge: 60 }); // Increased maxAge for reliability
     
   } catch (error: any) {
     console.error('Registration error:', error);
@@ -53,8 +53,8 @@ export async function register(formData: FormData) {
     return { error: `Registration failed: ${error.message}` };
   }
   
-  // Redirect to the dashboard where the client can finalize the session
-  redirect('/');
+  // Redirect to the same signup page, where the useEffect will trigger session creation
+  redirect('/signup');
 }
 
 export async function logout() {

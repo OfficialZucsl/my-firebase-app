@@ -29,14 +29,21 @@ export default function SignupPage() {
         if (user) {
           try {
             const idToken = await user.getIdToken();
-            await fetch('/api/auth/session', {
+            const response = await fetch('/api/auth/session', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({ idToken }),
             });
+
+            if (!response.ok) {
+              throw new Error('Failed to create session on the server.');
+            }
+
             // Clear the temporary cookie
             document.cookie = 'login_success=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
-            router.refresh(); // Refresh to allow middleware to handle final state
+            // Use router.push for a client-side navigation to the dashboard
+            router.push('/'); 
+            
           } catch (error) {
             // If session creation fails, send them to the login page to try manually.
              setErrorMessage('Could not log you in automatically. Please try logging in.');

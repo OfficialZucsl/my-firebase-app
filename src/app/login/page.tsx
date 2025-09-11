@@ -57,9 +57,10 @@ export default function LoginPage() {
         }
       }
 
-      // 5. If successful, navigate to the dashboard using a full page reload
-      // This is the most reliable way to ensure the middleware picks up the new session.
-      window.location.href = '/';
+      // 5. If successful, the onAuthStateChanged listener in AuthProvider will handle the redirect.
+      // We no longer need to force a redirect here. The UI will update reactively.
+       router.push('/');
+
 
     } catch (error: any) {
       console.error('Full authentication error:', error);
