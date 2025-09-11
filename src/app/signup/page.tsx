@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -20,8 +21,7 @@ export default function SignupPage() {
   const router = useRouter();
 
   useEffect(() => {
-    // This effect handles the case where a user successfully registers and is redirected here.
-    // It checks for the temporary cookie and the auth state, then creates the session.
+    // This effect handles creating the session cookie after a successful registration and redirect.
     const wasRegistrationSuccessful = document.cookie.includes('login_success=true');
     
     if (wasRegistrationSuccessful) {
@@ -36,9 +36,11 @@ export default function SignupPage() {
             });
             // Clear the temporary cookie
             document.cookie = 'login_success=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
-            router.refresh(); // Refresh to be redirected to dashboard
+            router.refresh(); // Refresh to allow middleware to handle final state
           } catch (error) {
-            setErrorMessage('Could not log you in after registration. Please try logging in manually.');
+            // If session creation fails, send them to the login page to try manually.
+             setErrorMessage('Could not log you in automatically. Please try logging in.');
+             router.push('/login');
           }
         }
       });
@@ -48,6 +50,7 @@ export default function SignupPage() {
 
 
   const handleSubmit = async (formData: FormData) => {
+    setErrorMessage(undefined);
     const result = await register(formData);
     if (result?.error) {
       setErrorMessage(result.error);

@@ -53,8 +53,8 @@ export async function register(formData: FormData) {
     return { error: `Registration failed: ${error.message}` };
   }
   
-  // Redirect to login where the client can finalize the session
-  redirect('/login');
+  // Redirect to the dashboard where the client can finalize the session
+  redirect('/');
 }
 
 export async function logout() {
