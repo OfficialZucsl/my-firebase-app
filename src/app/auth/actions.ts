@@ -1,71 +1,11 @@
 
 'use server';
 
-import { signInWithEmailAndPassword, createUserWithEmailAndPassword } from 'firebase/auth';
+import { createUserWithEmailAndPassword } from 'firebase/auth';
 import { auth, db } from '@/lib/firebase';
 import { redirect } from 'next/navigation';
 import { doc, setDoc, Timestamp } from 'firebase/firestore';
-import { getAdminAuth } from '@/lib/firebase-admin';
 import { cookies } from 'next/headers';
-
-export async function createSessionCookie(idToken: string) {
-  try {
-    console.log('Attempting to create session cookie...');
-    const auth = getAdminAuth();
-    
-    // Create session cookie (expires in 5 days)
-    const expiresIn = 60 * 60 * 24 * 5 * 1000; // 5 days
-    const sessionCookie = await auth.createSessionCookie(idToken, { expiresIn });
-    
-    // Set the cookie
-    cookies().set('session', sessionCookie, {
-      maxAge: expiresIn,
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
-      path: '/',
-    });
-    
-    console.log('Session cookie created successfully.');
-    return { success: true };
-    
-  } catch (error: any) {
-    console.error('Session cookie creation failed:', error);
-    // Log environment variables on failure for debugging
-    console.log('Environment check during auth action failure:', {
-      nodeEnv: process.env.NODE_ENV,
-      projectId: process.env.FIREBASE_PROJECT_ID ? 'FOUND' : 'MISSING',
-      privateKey: process.env.FIREBASE_PRIVATE_KEY ? 'FOUND' : 'MISSING',
-      clientEmail: process.env.FIREBASE_CLIENT_EMAIL ? 'FOUND' : 'MISSING',
-    });
-    return { success: false, error: 'Could not create a server session. Please check server logs.' };
-  }
-}
-
-export async function authenticate(formData: FormData) {
-  const email = formData.get('email') as string;
-  const password = formData.get('password') as string;
-
-  try {
-    const userCredential = await signInWithEmailAndPassword(auth, email, password);
-    const user = userCredential.user;
-    const idToken = await user.getIdToken();
-
-    const sessionResult = await createSessionCookie(idToken);
-    if (!sessionResult.success) {
-      return { error: sessionResult.error };
-    }
-
-  } catch (error: any) {
-    console.error('Authentication error:', error);
-    if (error.code === 'auth/invalid-credential' || error.code === 'auth/wrong-password' || error.code === 'auth/user-not-found') {
-        return { error: 'Invalid email or password.' };
-    }
-    return { error: `An unexpected error occurred: ${error.message}` };
-  }
-
-  redirect('/');
-}
 
 export async function register(formData: FormData) {
   const email = formData.get('email') as string;
@@ -97,12 +37,9 @@ export async function register(formData: FormData) {
         createdAt: Timestamp.now(),
     });
     
-    const idToken = await user.getIdToken();
-    
-    const sessionResult = await createSessionCookie(idToken);
-    if (!sessionResult.success) {
-      return { error: 'Could not create a server session after registration. Please check server logs.' };
-    }
+    // After registration, the user will be logged in on the client.
+    // We will set a temporary cookie to signal the client to create the session.
+    cookies().set('login_success', 'true', { maxAge: 10 });
     
   } catch (error: any) {
     console.error('Registration error:', error);
@@ -116,7 +53,8 @@ export async function register(formData: FormData) {
     return { error: `Registration failed: ${error.message}` };
   }
   
-  redirect('/');
+  // Redirect to login where the client can finalize the session
+  redirect('/login');
 }
 
 export async function logout() {

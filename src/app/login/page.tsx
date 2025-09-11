@@ -1,8 +1,6 @@
 'use client';
 
 import { useState } from 'react';
-import { useFormStatus } from 'react-dom';
-import { authenticate } from '@/app/auth/actions';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -10,15 +8,57 @@ import { Label } from '@/components/ui/label';
 import FiduciaLendLogo from '@/components/fiducia-lend-logo';
 import Link from 'next/link';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { AlertCircle } from 'lucide-react';
+import { AlertCircle, Loader2 } from 'lucide-react';
+import { signInWithEmailAndPassword } from 'firebase/auth';
+import { auth } from '@/lib/firebase';
+import { useRouter } from 'next/navigation';
 
 export default function LoginPage() {
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [errorMessage, setErrorMessage] = useState<string | undefined>(undefined);
+  const [loading, setLoading] = useState(false);
+  const router = useRouter();
 
-  const handleSubmit = async (formData: FormData) => {
-    const result = await authenticate(formData);
-    if (result?.error) {
-      setErrorMessage(result.error);
+  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    setLoading(true);
+    setErrorMessage(undefined);
+
+    try {
+      // 1. Authenticate with Firebase on the client
+      const userCredential = await signInWithEmailAndPassword(auth, email, password);
+      const user = userCredential.user;
+
+      // 2. Get the ID token
+      const idToken = await user.getIdToken();
+
+      // 3. Send the token to our API route to create a session cookie
+      const response = await fetch('/api/auth/session', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ idToken }),
+      });
+
+      if (!response.ok) {
+        const result = await response.json();
+        throw new Error(result.error || 'Failed to create session.');
+      }
+
+      // 4. If successful, refresh the page to be redirected by middleware
+      router.refresh();
+
+    } catch (error: any) {
+      console.error('Authentication error:', error);
+      if (error.code === 'auth/invalid-credential' || error.code === 'auth/wrong-password' || error.code === 'auth/user-not-found') {
+        setErrorMessage('Invalid email or password.');
+      } else {
+        setErrorMessage(error.message || 'An unexpected error occurred.');
+      }
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -33,14 +73,29 @@ export default function LoginPage() {
           <CardDescription>Enter your email below to login to your account</CardDescription>
         </CardHeader>
         <CardContent>
-          <form action={handleSubmit} className="space-y-4">
+          <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="email">Email</Label>
-              <Input id="email" name="email" type="email" placeholder="m@example.com" required />
+              <Input 
+                id="email" 
+                name="email" 
+                type="email" 
+                placeholder="m@example.com" 
+                required 
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+              />
             </div>
             <div className="space-y-2">
               <Label htmlFor="password">Password</Label>
-              <Input id="password" name="password" type="password" required />
+              <Input 
+                id="password" 
+                name="password" 
+                type="password" 
+                required 
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+              />
             </div>
             {errorMessage && (
               <Alert variant="destructive">
@@ -49,7 +104,10 @@ export default function LoginPage() {
                 <AlertDescription>{errorMessage}</AlertDescription>
               </Alert>
             )}
-            <LoginButton />
+            <Button type="submit" className="w-full" disabled={loading}>
+              {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              {loading ? 'Logging in...' : 'Login'}
+            </Button>
           </form>
           <div className="mt-4 text-center text-sm">
             Don&apos;t have an account?{' '}
@@ -60,14 +118,5 @@ export default function LoginPage() {
         </CardContent>
       </Card>
     </main>
-  );
-}
-
-function LoginButton() {
-  const { pending } = useFormStatus();
-  return (
-    <Button type="submit" className="w-full" aria-disabled={pending}>
-      {pending ? 'Logging in...' : 'Login'}
-    </Button>
   );
 }

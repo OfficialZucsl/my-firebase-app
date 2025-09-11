@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useFormStatus } from 'react-dom';
 import { register } from '@/app/auth/actions';
 import { Button } from '@/components/ui/button';
@@ -11,9 +11,41 @@ import FiduciaLendLogo from '@/components/fiducia-lend-logo';
 import Link from 'next/link';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { AlertCircle } from 'lucide-react';
+import { onAuthStateChanged } from 'firebase/auth';
+import { auth } from '@/lib/firebase';
+import { useRouter } from 'next/navigation';
 
 export default function SignupPage() {
   const [errorMessage, setErrorMessage] = useState<string | undefined>(undefined);
+  const router = useRouter();
+
+  useEffect(() => {
+    // This effect handles the case where a user successfully registers and is redirected here.
+    // It checks for the temporary cookie and the auth state, then creates the session.
+    const wasRegistrationSuccessful = document.cookie.includes('login_success=true');
+    
+    if (wasRegistrationSuccessful) {
+      const unsubscribe = onAuthStateChanged(auth, async (user) => {
+        if (user) {
+          try {
+            const idToken = await user.getIdToken();
+            await fetch('/api/auth/session', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ idToken }),
+            });
+            // Clear the temporary cookie
+            document.cookie = 'login_success=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
+            router.refresh(); // Refresh to be redirected to dashboard
+          } catch (error) {
+            setErrorMessage('Could not log you in after registration. Please try logging in manually.');
+          }
+        }
+      });
+      return () => unsubscribe();
+    }
+  }, [router]);
+
 
   const handleSubmit = async (formData: FormData) => {
     const result = await register(formData);
