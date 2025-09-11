@@ -44,8 +44,13 @@ export default function LoginPage() {
       });
 
       if (!response.ok) {
-        const result = await response.json();
-        throw new Error(result.error || 'Failed to create session.');
+        // Try to parse error from server, but handle cases where it's not JSON
+        try {
+            const result = await response.json();
+            throw new Error(result.error || `Server responded with status: ${response.status}`);
+        } catch (e) {
+            throw new Error(`Server returned an invalid response. Status: ${response.status}`);
+        }
       }
 
       // 4. If successful, refresh the page to be redirected by middleware
@@ -56,6 +61,7 @@ export default function LoginPage() {
       if (error.code === 'auth/invalid-credential' || error.code === 'auth/wrong-password' || error.code === 'auth/user-not-found') {
         setErrorMessage('Invalid email or password.');
       } else {
+        // Use a more generic but informative message from the caught error
         setErrorMessage(error.message || 'An unexpected error occurred.');
       }
     } finally {
