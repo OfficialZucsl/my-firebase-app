@@ -1,7 +1,5 @@
 
 'use server';
-import dotenv from 'dotenv';
-import path from 'path';
 
 import { signInWithEmailAndPassword, createUserWithEmailAndPassword } from 'firebase/auth';
 import { auth, db } from '@/lib/firebase';
@@ -9,9 +7,6 @@ import { redirect } from 'next/navigation';
 import { doc, setDoc, Timestamp } from 'firebase/firestore';
 import { getAdminAuth } from '@/lib/firebase-admin';
 import { cookies } from 'next/headers';
-
-// Explicitly load .env file from the project root
-dotenv.config({ path: path.resolve(process.cwd(), '.env') });
 
 export async function createSessionCookie(idToken: string) {
   try {
