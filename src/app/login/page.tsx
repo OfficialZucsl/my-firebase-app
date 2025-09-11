@@ -43,13 +43,13 @@ export default function LoginPage() {
         body: JSON.stringify({ idToken }),
       });
 
+      // 4. Check if the session creation was successful
       if (!response.ok) {
-        const errorText = await response.text();
-        console.error('Server error response (raw):', errorText);
-        throw new Error(`Server responded with status ${response.status}: ${errorText.substring(0, 300)}...`);
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Session creation failed.');
       }
 
-      // 4. If successful, redirect to the dashboard
+      // 5. If successful, navigate to the dashboard
       router.push('/');
 
     } catch (error: any) {
