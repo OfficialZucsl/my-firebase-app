@@ -30,30 +30,35 @@ export default async function TestFirebasePage() {
                   Check your server console for more detailed logs.
                 </CardDescription>
               </CardHeader>
-              <CardContent className="space-y-4">
-                 <Alert variant={diagnosticResult.success ? 'default' : 'destructive'}>
-                  {diagnosticResult.success ? <CheckCircle2 className="h-4 w-4" /> : <AlertCircle className="h-4 w-4" />}
-                  <AlertTitle>{diagnosticResult.success ? 'Success!' : 'Failed!'}</AlertTitle>
-                  <AlertDescription>
-                    {diagnosticResult.success 
-                      ? "The Firebase Admin SDK was initialized successfully on the server."
-                      : `The Firebase Admin SDK failed to initialize. Error: ${diagnosticResult.error}`
-                    }
-                  </AlertDescription>
-                </Alert>
-                
-                <h3 className="font-semibold">Diagnostic Details:</h3>
-                <div className="bg-muted p-4 rounded-md text-sm font-mono overflow-x-auto">
-                  <pre className="whitespace-pre-wrap">
-                    {JSON.stringify(diagnosticResult.details, null, 2)}
-                  </pre>
-                </div>
-                
-              </CardContent>
+              <ContentWrapper diagnosticResult={diagnosticResult} />
             </Card>
           </main>
         </div>
       </SidebarInset>
     </SidebarProvider>
+  );
+}
+
+function ContentWrapper({ diagnosticResult }: { diagnosticResult: any }) {
+  return (
+    <CardContent className="space-y-4">
+      <Alert variant={diagnosticResult.success ? 'default' : 'destructive'}>
+        {diagnosticResult.success ? <CheckCircle2 className="h-4 w-4" /> : <AlertCircle className="h-4 w-4" />}
+        <AlertTitle>{diagnosticResult.success ? 'Success!' : 'Failed!'}</AlertTitle>
+        <AlertDescription>
+          {diagnosticResult.success 
+            ? "The Firebase Admin SDK was initialized successfully on the server."
+            : `The Firebase Admin SDK failed to initialize. Error: ${diagnosticResult.error}`
+          }
+        </AlertDescription>
+      </Alert>
+      
+      <h3 className="font-semibold">Diagnostic Details:</h3>
+      <div className="bg-muted p-4 rounded-md text-sm font-mono overflow-x-auto">
+        <pre className="whitespace-pre-wrap">
+          {JSON.stringify(diagnosticResult.details, null, 2)}
+        </pre>
+      </div>
+    </CardContent>
   );
 }
