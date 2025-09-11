@@ -1,61 +1,80 @@
-// lib/firebase-admin.js
+
+// src/lib/firebase-admin.ts
 import { initializeApp, getApps, cert, App } from 'firebase-admin/app';
 import { getAuth, Auth } from 'firebase-admin/auth';
 import { cookies } from 'next/headers';
-import 'dotenv/config';
 
-// Define a type for our global variable to ensure type safety
-interface FirebaseAdminGlobal {
-  app?: App;
-  auth?: Auth;
-}
+// Global singleton variables to ensure the SDK is initialized only once
+let adminApp: App | null = null;
+let adminAuth: Auth | null = null;
+let initializationPromise: Promise<{ app: App; auth: Auth }> | null = null;
 
-// Use a unique symbol to store the Firebase Admin instance on the global object.
-// This prevents collisions with other libraries.
-const ADMIN_APP_KEY = Symbol.for('firebase-admin-app');
-
-// Type assertion for the global object
-const globalWithFirebase = global as typeof globalThis & {
-  [ADMIN_APP_KEY]?: FirebaseAdminGlobal;
-};
-
-function getFirebaseAdmin(): FirebaseAdminGlobal {
-  // If the instance already exists, return it
-  if (globalWithFirebase[ADMIN_APP_KEY]) {
-    return globalWithFirebase[ADMIN_APP_KEY]!;
+async function initializeFirebaseAdmin(): Promise<{ app: App; auth: Auth }> {
+  // If already initialized, return existing instances
+  if (adminApp && adminAuth) {
+    return { app: adminApp, auth: adminAuth };
   }
 
-  // Otherwise, initialize the app and store it
-  try {
-    const privateKey = process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n');
-    if (!process.env.FIREBASE_PROJECT_ID || !privateKey || !process.env.FIREBASE_CLIENT_EMAIL) {
-      throw new Error('Firebase Admin SDK credentials are not set in environment variables.');
+  // If initialization is in progress, wait for it
+  if (initializationPromise) {
+    return initializationPromise;
+  }
+
+  // Start new initialization
+  initializationPromise = (async () => {
+    try {
+      console.log('Starting Firebase Admin initialization...');
+      
+      const existingApps = getApps();
+      if (existingApps.length > 0) {
+        console.log('Found existing Firebase app, using it');
+        adminApp = existingApps[0];
+        adminAuth = getAuth(adminApp);
+        return { app: adminApp, auth: adminAuth };
+      }
+
+      const privateKey = process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n');
+      const projectId = process.env.FIREBASE_PROJECT_ID;
+      const clientEmail = process.env.FIREBASE_CLIENT_EMAIL;
+
+      if (!projectId || !privateKey || !clientEmail) {
+        throw new Error(`Missing Firebase credentials: ${!projectId ? 'PROJECT_ID ' : ''}${!privateKey ? 'PRIVATE_KEY ' : ''}${!clientEmail ? 'CLIENT_EMAIL' : ''}`);
+      }
+
+      console.log('All Firebase credentials found, creating credential...');
+      
+      const credential = cert({
+        projectId,
+        clientEmail,
+        privateKey,
+      });
+
+      console.log('Initializing Firebase app...');
+      adminApp = initializeApp({ credential });
+      adminAuth = getAuth(adminApp);
+
+      console.log('Firebase Admin initialized successfully');
+
+      return { app: adminApp, auth: adminAuth };
+
+    } catch (error) {
+      console.error('Firebase Admin initialization failed:', error);
+      
+      // Reset state on failure to allow retries
+      adminApp = null;
+      adminAuth = null;
+      initializationPromise = null;
+      
+      throw error;
     }
-    
-    const app = initializeApp({
-      credential: cert({
-        projectId: process.env.FIREBASE_PROJECT_ID,
-        clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
-        privateKey: privateKey,
-      }),
-    });
-    
-    const auth = getAuth(app);
-    
-    globalWithFirebase[ADMIN_APP_KEY] = { app, auth };
-    
-    return { app, auth };
+  })();
 
-  } catch (error: any) {
-    console.error('Firebase Admin Initialization Error:', error.message);
-    // Throw a more specific error to help with debugging
-    throw new Error(`Failed to initialize Firebase Admin SDK: ${error.message}`);
-  }
+  return initializationPromise;
 }
 
-export function getAdminAuth(): Auth {
-  const { auth } = getFirebaseAdmin();
-  return auth!;
+export async function getAdminAuth(): Promise<Auth> {
+  const { auth } = await initializeFirebaseAdmin();
+  return auth;
 }
 
 export async function getAuthenticatedUser() {
@@ -64,13 +83,12 @@ export async function getAuthenticatedUser() {
     return null;
   }
   try {
-    const auth = getAdminAuth();
+    const auth = await getAdminAuth();
     const decodedToken = await auth.verifySessionCookie(session, true);
     const user = await auth.getUser(decodedToken.uid);
     return user;
   } catch (error) {
     console.error('Error verifying session cookie:', error);
-    // Invalidate the cookie if it's invalid
     cookies().delete('session');
     return null;
   }
