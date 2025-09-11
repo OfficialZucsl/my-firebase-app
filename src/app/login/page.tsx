@@ -12,14 +12,12 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { AlertCircle, Loader2 } from 'lucide-react';
 import { signInWithEmailAndPassword } from 'firebase/auth';
 import { auth } from '@/lib/firebase';
-import { useRouter } from 'next/navigation';
 
 export default function LoginPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [errorMessage, setErrorMessage] = useState<string | undefined>(undefined);
   const [loading, setLoading] = useState(false);
-  const router = useRouter();
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -49,12 +47,13 @@ export default function LoginPage() {
         throw new Error(errorData.error || 'Session creation failed.');
       }
 
-      // 5. If successful, navigate to the dashboard
-      router.push('/');
+      // 5. If successful, navigate to the dashboard using a full page reload
+      // This is the most reliable way to ensure the middleware picks up the new session.
+      window.location.href = '/';
 
     } catch (error: any) {
       console.error('Full authentication error:', error);
-      if (error.code === 'auth/invalid-credential') {
+      if (error.code === 'auth/invalid-credential' || error.message.includes('auth/invalid-credential')) {
         setErrorMessage('Invalid email or password. Please try again.');
       } else {
         setErrorMessage(error.message || 'An unexpected error occurred during login.');
