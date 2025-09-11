@@ -37,8 +37,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const login = (userData: { uid: string; email: string | null }) => {
     setUser(userData);
-    // The navigation now uses a hard reload to ensure middleware has the cookie
-    window.location.href = '/'; 
+    // Reload the page. The middleware will see the new session cookie
+    // and redirect to the dashboard.
+    window.location.reload(); 
   };
 
   const logout = async () => {
