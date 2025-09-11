@@ -12,31 +12,15 @@ import {
   limit
 } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
+import type { Loan as LoanType, Payment as PaymentType } from '@/lib/types';
 
-export interface Loan {
-  id: string;
-  userId: string;
-  amount: number;
-  interestRate: number;
-  termMonths: number;
-  status: 'pending' | 'approved' | 'active' | 'completed' | 'defaulted';
-  applicationDate: Date;
-  approvalDate?: Date;
-  nextPaymentDate?: Date;
+
+export interface Loan extends LoanType {
   remainingBalance: number;
   monthlyPayment: number;
   totalPaid: number;
 }
-
-export interface Payment {
-  id: string;
-  loanId: string;
-  userId: string;
-  amount: number;
-  paymentDate: Date;
-  status: 'completed' | 'pending' | 'failed';
-  method: 'bank_transfer' | 'mobile_money' | 'cash';
-}
+export interface Payment extends PaymentType {}
 
 interface LoanStore {
   loans: Loan[];
@@ -47,8 +31,9 @@ interface LoanStore {
   // Actions
   fetchLoans: (userId: string | undefined) => Promise<void>;
   fetchPayments: (userId: string | undefined) => Promise<void>;
-  applyForLoan: (loanData: Omit<Loan, 'id' | 'applicationDate' | 'status' | 'remainingBalance' | 'totalPaid'>) => Promise<void>;
-  makePayment: (paymentData: Omit<Payment, 'id' | 'paymentDate'>) => Promise<void>;
+  addLoan: (loan: LoanType) => void;
+  updateLoan: (id: string, updates: Partial<LoanType>) => void;
+  makePayment: (paymentData: Omit<Payment, 'id' | 'date'>) => Promise<void>;
   
   // Selectors
   getActiveLoan: () => Loan | null;
@@ -64,7 +49,6 @@ export const useLoanStore = create<LoanStore>((set, get) => ({
   error: null,
 
   fetchLoans: async (userId: string | undefined) => {
-    // Early return if userId is not available
     if (!userId) {
       console.warn('fetchLoans called without userId, skipping fetch');
       return;
@@ -74,20 +58,30 @@ export const useLoanStore = create<LoanStore>((set, get) => ({
     
     try {
       const loansRef = collection(db, 'loans');
+      // Simplified query to avoid index requirement
       const q = query(
         loansRef, 
-        where('userId', '==', userId),
-        orderBy('applicationDate', 'desc')
+        where('userId', '==', userId)
       );
       
       const querySnapshot = await getDocs(q);
-      const loans: Loan[] = querySnapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data(),
-        applicationDate: doc.data().applicationDate?.toDate(),
-        approvalDate: doc.data().approvalDate?.toDate(),
-        nextPaymentDate: doc.data().nextPaymentDate?.toDate(),
-      })) as Loan[];
+      const loans: Loan[] = querySnapshot.docs.map(doc => {
+        const data = doc.data();
+        const amount = data.amount || 0;
+        const totalPaid = data.totalPaid || 0;
+        return {
+          id: doc.id,
+          ...data,
+          applicationDate: data.applicationDate?.toDate(),
+          approvalDate: data.approvalDate?.toDate(),
+          nextPaymentDate: data.nextPaymentDate?.toDate(),
+          remainingBalance: amount - totalPaid, // Calculate remaining balance
+          monthlyPayment: data.nextPaymentAmount || 0
+        }
+      }) as Loan[];
+
+      // Sort client-side
+      loans.sort((a, b) => (b.applicationDate?.getTime() || 0) - (a.applicationDate?.getTime() || 0));
 
       set({ loans, loading: false });
     } catch (error) {
@@ -100,7 +94,6 @@ export const useLoanStore = create<LoanStore>((set, get) => ({
   },
 
   fetchPayments: async (userId: string | undefined) => {
-    // Early return if userId is not available
     if (!userId) {
       console.warn('fetchPayments called without userId, skipping fetch');
       return;
@@ -113,14 +106,14 @@ export const useLoanStore = create<LoanStore>((set, get) => ({
       const q = query(
         paymentsRef, 
         where('userId', '==', userId),
-        orderBy('paymentDate', 'desc')
+        orderBy('date', 'desc')
       );
       
       const querySnapshot = await getDocs(q);
       const payments: Payment[] = querySnapshot.docs.map(doc => ({
         id: doc.id,
         ...doc.data(),
-        paymentDate: doc.data().paymentDate?.toDate(),
+        date: doc.data().date?.toDate(),
       })) as Payment[];
 
       set({ payments, loading: false });
@@ -132,35 +125,24 @@ export const useLoanStore = create<LoanStore>((set, get) => ({
       });
     }
   },
-
-  applyForLoan: async (loanData) => {
-    set({ loading: true, error: null });
-    
-    try {
-      const newLoan = {
-        ...loanData,
-        applicationDate: new Date(),
-        status: 'pending' as const,
-        remainingBalance: loanData.amount,
-        totalPaid: 0,
-      };
-
-      const docRef = await addDoc(collection(db, 'loans'), newLoan);
-      
-      // Refresh loans after adding
-      if (loanData.userId) {
-        await get().fetchLoans(loanData.userId);
-      }
-      
-      set({ loading: false });
-    } catch (error) {
-      console.error('Error applying for loan:', error);
-      set({ 
-        error: error instanceof Error ? error.message : 'Failed to apply for loan',
-        loading: false 
-      });
-    }
+  
+  addLoan: (loan) => {
+    set((state) => ({
+      loans: [
+        { ...loan, remainingBalance: loan.amount, totalPaid: 0, monthlyPayment: loan.nextPaymentAmount },
+        ...state.loans
+      ]
+    }));
   },
+  
+  updateLoan: (id, updates) => {
+    set((state) => ({
+      loans: state.loans.map(loan => 
+        loan.id === id ? { ...loan, ...updates } as Loan : loan
+      )
+    }));
+  },
+
 
   makePayment: async (paymentData) => {
     set({ loading: true, error: null });
@@ -168,19 +150,18 @@ export const useLoanStore = create<LoanStore>((set, get) => ({
     try {
       const newPayment = {
         ...paymentData,
-        paymentDate: new Date(),
+        date: new Date(),
       };
 
       await addDoc(collection(db, 'payments'), newPayment);
       
-      // Update loan balance
       const loanRef = doc(db, 'loans', paymentData.loanId);
       const loanDoc = await getDoc(loanRef);
       
       if (loanDoc.exists()) {
         const loanData = loanDoc.data() as Loan;
-        const newBalance = loanData.remainingBalance - paymentData.amount;
-        const newTotalPaid = loanData.totalPaid + paymentData.amount;
+        const newBalance = (loanData.remainingBalance || loanData.amount) - paymentData.amount;
+        const newTotalPaid = (loanData.totalPaid || 0) + paymentData.amount;
         
         await updateDoc(loanRef, {
           remainingBalance: Math.max(0, newBalance),
@@ -189,7 +170,6 @@ export const useLoanStore = create<LoanStore>((set, get) => ({
         });
       }
       
-      // Refresh data
       if (paymentData.userId) {
         await Promise.all([
           get().fetchLoans(paymentData.userId),
@@ -207,30 +187,30 @@ export const useLoanStore = create<LoanStore>((set, get) => ({
     }
   },
 
-  // Selectors with safe defaults
   getActiveLoan: () => {
     const { loans } = get();
     return loans.find(loan => 
-      loan.status === 'active' || loan.status === 'approved'
+      loan.status === 'Active' || loan.status === 'approved'
     ) || null;
   },
 
   getTotalDebt: () => {
     const { loans } = get();
     return loans
-      .filter(loan => loan.status === 'active' || loan.status === 'approved')
-      .reduce((total, loan) => total + loan.remainingBalance, 0);
+      .filter(loan => loan.status === 'Active' || loan.status === 'approved')
+      .reduce((total, loan) => total + (loan.remainingBalance || 0), 0);
   },
 
   getNextPaymentAmount: () => {
     const activeLoan = get().getActiveLoan();
-    return activeLoan ? Math.min(activeLoan.monthlyPayment, activeLoan.remainingBalance) : 0;
+    if (!activeLoan) return 0;
+    return Math.min(activeLoan.monthlyPayment, activeLoan.remainingBalance);
   },
 
   getRecentPayments: (limitCount = 5) => {
     const { payments } = get();
     return payments
-      .sort((a, b) => b.paymentDate.getTime() - a.paymentDate.getTime())
+      .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
       .slice(0, limitCount);
   },
 }));

@@ -27,8 +27,11 @@ export async function getLoans(userId: string): Promise<Loan[]> {
         const loanSnapshot = await getDocs(q);
         const loansList = loanSnapshot.docs.map(doc => {
             const data = doc.data();
+            const applicationDate = data.applicationDate instanceof Timestamp 
+                ? data.applicationDate.toDate().toISOString().split('T')[0] 
+                : 'N/A';
             return {
-                id: data.id, // Using the custom ID from the document
+                id: data.id,
                 userId: data.userId,
                 amount: data.amount || 0,
                 interestRate: data.interestRate || 0,
@@ -37,6 +40,7 @@ export async function getLoans(userId: string): Promise<Loan[]> {
                 nextPaymentDate: data.nextPaymentDate || 'N/A',
                 nextPaymentAmount: data.nextPaymentAmount || 0,
                 reason: data.reason || 'N/A',
+                applicationDate,
             } as Loan;
         });
         return loansList;
@@ -69,7 +73,7 @@ export async function submitLoanRequest(
 
     const newLoan: Loan = {
       ...newLoanData,
-      applicationDate: undefined, 
+      applicationDate: new Date().toISOString().split('T')[0],
     };
 
     return {

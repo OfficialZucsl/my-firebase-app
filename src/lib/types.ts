@@ -10,6 +10,7 @@ export interface Loan {
   nextPaymentDate: string;
   nextPaymentAmount: number;
   reason?: string;
+  applicationDate?: string;
 }
 
 export interface LoanRequest {
