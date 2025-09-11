@@ -5,7 +5,7 @@ import { getAuth } from 'firebase/auth';
 
 // Your web app's Firebase configuration
 const firebaseConfig = {
-  apiKey: "AIzaSyCLa1RSoTQHkTc8Gw-4RH1TV0p5PIpLylE",
+  apiKey: "AIzaSyCmZDIw34uiYqsmZsouOVbVqBlYHnibp-g",
   authDomain: "fiducialend.firebaseapp.com",
   projectId: "fiducialend",
   storageBucket: "fiducialend.appspot.com",
