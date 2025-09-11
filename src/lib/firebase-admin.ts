@@ -1,13 +1,15 @@
 
 // src/lib/firebase-admin.ts
-import { initializeApp, getApps, cert, App } from 'firebase-admin/app';
-import { getAuth, Auth } from 'firebase-admin/auth';
-import { cookies } from 'next/headers';
 import { config } from 'dotenv';
 import path from 'path';
 
-// Explicitly load .env file from the project root
+// Explicitly load .env file from the project root AT THE VERY TOP
 config({ path: path.resolve(process.cwd(), '.env') });
+
+
+import { initializeApp, getApps, cert, App } from 'firebase-admin/app';
+import { getAuth, Auth } from 'firebase-admin/auth';
+import { cookies } from 'next/headers';
 
 
 // Global singleton variables to ensure the SDK is initialized only once
