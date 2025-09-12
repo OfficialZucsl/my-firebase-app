@@ -1,30 +1,28 @@
-
 'use client';
-import {
-  SidebarProvider,
-  Sidebar,
-  SidebarInset,
-} from '@/components/ui/sidebar';
+
+import { useEffect } from 'react';
+import { SidebarProvider, Sidebar, SidebarInset } from '@/components/ui/sidebar';
 import Header from '@/components/header';
 import SidebarNav from '@/components/sidebar-nav';
 import LoanHistory from '@/components/loan-history';
-import { useLoanStore } from '@/hooks/use-loan-store';
 import { Button } from '@/components/ui/button';
 import { updateLoanStatus } from '../actions';
 import { useToast } from '@/hooks/use-toast';
-import { useEffect } from 'react';
 import { useAuth } from '@/hooks/use-auth';
+import { useLoanStore } from '@/hooks/use-loan-store';
 
 export default function LoansPage() {
   const { loans, updateLoan, fetchLoans, loading } = useLoanStore();
   const { toast } = useToast();
-  const { user } = useAuth();
+  const { user } = useAuth(); // We get the logged-in user here
 
+  // THIS IS THE CORRECTED SECTION
   useEffect(() => {
+    // We check if the user object exists before trying to fetch loans
     if (user) {
-      fetchLoans(user.uid);
+      fetchLoans(user.uid); // We pass the user's ID to the function
     }
-  }, [user, fetchLoans]);
+  }, [user, fetchLoans]); // useEffect will run when user becomes available
 
 
   const handleUpdateStatus = async (id: string, status: 'Active' | 'Rejected') => {
@@ -40,14 +38,13 @@ export default function LoansPage() {
         throw new Error('Failed to update loan status');
       }
     } catch (error) {
-       toast({
-          title: 'Error',
-          description: 'Failed to update loan status.',
-          variant: 'destructive',
-        });
+      toast({
+        title: 'Error',
+        description: 'Failed to update loan status.',
+        variant: 'destructive',
+      });
     }
   };
-
 
   const loanActions = (loan: any) => {
     if (loan.status === 'Pending') {
