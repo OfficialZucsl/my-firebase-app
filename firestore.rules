@@ -1,0 +1,33 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // PUBLIC COLLECTIONS
+    // Anyone can read articles and offers. No one can write.
+    match /articles/{articleId} {
+      allow read: if true;
+      allow write: if false;
+    }
+    match /offers/{offerId} {
+      allow read: if true;
+      allow write: if false;
+    }
+
+    // USER-OWNED COLLECTIONS
+    // Users can read/create their own transactions, but not others'.
+    match /transactions/{transactionId} {
+      allow read, create: if request.auth != null && request.auth.uid == request.resource.data.userId;
+    }
+    // Users can manage their own loans, but not others'.
+    match /loans/{loanId} {
+      allow read, create, update: if request.auth != null && request.auth.uid == resource.data.userId;
+    }
+
+    // COLLECTION GROUP RULE FOR PAYMENTS (THIS IS THE FIX)
+    // This allows a query across ALL 'payments' collections in the database,
+    // but only returns documents where the userId matches the logged-in user.
+    match /{path=**}/payments/{paymentId} {
+      allow read: if request.auth != null && request.auth.uid == resource.data.userId;
+    }
+  }
+}
