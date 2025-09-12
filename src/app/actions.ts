@@ -61,7 +61,7 @@ export async function submitLoanRequest(
       amount: loanDetails.amount,
       interestRate: loanDetails.interestRate,
       termInWeeks: loanDetails.durationInWeeks,
-      status: 'Pending',
+      status: 'Pending' as const,
       nextPaymentDate: 'N/A',
       nextPaymentAmount: loanDetails.weeklyPayment,
       reason: loanDetails.reason,
