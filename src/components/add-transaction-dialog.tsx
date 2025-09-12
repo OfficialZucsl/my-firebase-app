@@ -36,6 +36,7 @@ import {
 } from '@/components/ui/form';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import type { PersonalTransaction, TransactionType } from '@/lib/types';
+import { useAuth } from '@/hooks/use-auth';
 
 const formSchema = z.object({
   type: z.enum(['income', 'expense']),
@@ -50,6 +51,7 @@ const incomeCategories = ['Salary', 'Freelance', 'Gift', 'Other'];
 export function AddTransactionDialog({ onAddTransaction }: { onAddTransaction: (data: Omit<PersonalTransaction, 'id' | 'date'>) => void }) {
   const [open, setOpen] = useState(false);
   const { toast } = useToast();
+  const { user } = useAuth(); // Get the current user
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -64,7 +66,17 @@ export function AddTransactionDialog({ onAddTransaction }: { onAddTransaction: (
   const transactionType = form.watch('type');
 
   const handleSubmit = (values: z.infer<typeof formSchema>) => {
-    onAddTransaction(values);
+    if (!user) { // A safety check to make sure the user is logged in
+      toast({ title: "Error", description: "You must be logged in to add a transaction.", variant: 'destructive' });
+      return;
+    }
+    
+    const transactionData = {
+      ...values,
+      userId: user.uid, // Add the user's ID to the data
+    };
+  
+    onAddTransaction(transactionData); // Pass the complete data
     toast({
       title: 'Success!',
       description: 'Your transaction has been added.',
