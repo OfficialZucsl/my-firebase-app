@@ -3,7 +3,6 @@ service cloud.firestore {
   match /databases/{database}/documents {
     
     // PUBLIC COLLECTIONS
-    // Anyone can read articles and offers. No one can write.
     match /articles/{articleId} {
       allow read: if true;
       allow write: if false;
@@ -14,18 +13,21 @@ service cloud.firestore {
     }
 
     // USER-OWNED COLLECTIONS
-    // Users can read/create their own transactions, but not others'.
     match /transactions/{transactionId} {
       allow read, create: if request.auth != null && request.auth.uid == request.resource.data.userId;
     }
-    // Users can manage their own loans, but not others'.
     match /loans/{loanId} {
       allow read, create, update: if request.auth != null && request.auth.uid == resource.data.userId;
     }
 
-    // COLLECTION GROUP RULE FOR PAYMENTS (THIS IS THE FIX)
-    // This allows a query across ALL 'payments' collections in the database,
-    // but only returns documents where the userId matches the logged-in user.
+    // THIS IS THE FIX: We need BOTH rules for 'payments'
+
+    // Rule 1: For simple queries like getDoc or onSnapshot on a single document
+    match /payments/{paymentId} {
+       allow read, write: if request.auth != null && request.auth.uid == resource.data.userId;
+    }
+
+    // Rule 2: For collection group queries across all 'payments' collections
     match /{path=**}/payments/{paymentId} {
       allow read: if request.auth != null && request.auth.uid == resource.data.userId;
     }
