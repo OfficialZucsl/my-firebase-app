@@ -111,7 +111,7 @@ export function LoanSummaryCard() {
 
   // Format date safely
   const formatDate = (date: Date | undefined) => {
-    if (!date) return 'Not set';
+    if (!date || isNaN(date.getTime())) return 'Not set';
     return new Intl.DateTimeFormat('en-US', {
       year: 'numeric',
       month: 'short',
@@ -182,7 +182,7 @@ export function LoanSummaryCard() {
           <div className="flex justify-between items-center mb-2">
             <span className="text-sm text-gray-600">Next Payment Due</span>
             <span className="text-sm font-medium">
-              {formatDate(activeLoan.nextPaymentDate)}
+              {formatDate(new Date(activeLoan.nextPaymentDate))}
             </span>
           </div>
           <div className="flex justify-between items-center mb-4">
