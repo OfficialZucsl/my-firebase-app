@@ -13,14 +13,18 @@ import { Button } from '@/components/ui/button';
 import { updateLoanStatus } from '../actions';
 import { useToast } from '@/hooks/use-toast';
 import { useEffect } from 'react';
+import { useAuth } from '@/hooks/use-auth';
 
 export default function LoansPage() {
   const { loans, updateLoan, fetchLoans, loading } = useLoanStore();
   const { toast } = useToast();
+  const { user } = useAuth();
 
   useEffect(() => {
-    fetchLoans();
-  }, [fetchLoans]);
+    if (user) {
+      fetchLoans(user.uid);
+    }
+  }, [user, fetchLoans]);
 
 
   const handleUpdateStatus = async (id: string, status: 'Active' | 'Rejected') => {
