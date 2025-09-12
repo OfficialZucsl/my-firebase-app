@@ -193,7 +193,7 @@ export const useLoanStore = create<LoanStore>((set, get) => ({
   getActiveLoan: () => {
     const { loans } = get();
     return loans.find(loan => 
-      loan.status === 'Active' || loan.status === 'approved'
+      loan.status === 'Active'
     ) || null;
   },
 
