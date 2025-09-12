@@ -58,30 +58,33 @@ export const useLoanStore = create<LoanStore>((set, get) => ({
     
     try {
       const loansRef = collection(db, 'loans');
-      // Simplified query to avoid index requirement
       const q = query(
         loansRef, 
         where('userId', '==', userId)
       );
       
       const querySnapshot = await getDocs(q);
+      
+      // This is the single, corrected mapping block
       const loans: Loan[] = querySnapshot.docs.map(doc => {
         const data = doc.data();
-        const amount = data.amount || 0;
-        const totalPaid = data.totalPaid || 0;
         return {
           id: doc.id,
-          ...data,
-          applicationDate: data.applicationDate?.toDate(),
-          approvalDate: data.approvalDate?.toDate(),
-          nextPaymentDate: data.nextPaymentDate?.toDate(),
-          remainingBalance: amount - totalPaid, // Calculate remaining balance
-          monthlyPayment: data.nextPaymentAmount || 0
-        }
-      }) as Loan[];
+          userId: data.userId,
+          amount: data.amount || 0,
+          interestRate: data.interestRate || 0,
+          termInWeeks: data.termInWeeks || 0,
+          status: data.status || 'Pending',
+          applicationDate: data.applicationDate?.toDate().toISOString() || new Date().toISOString(),
+          nextPaymentDate: data.nextPaymentDate || 'N/A',
+          nextPaymentAmount: data.nextPaymentAmount || 0,
+          reason: data.reason || 'N/A',
+          totalPaid: data.totalPaid || 0,
+        } as Loan;
+      });
 
       // Sort client-side
-      loans.sort((a, b) => (b.applicationDate?.getTime() || 0) - (a.applicationDate?.getTime() || 0));
+      loans.sort((a, b) => new Date(b.applicationDate).getTime() - new Date(a.applicationDate).getTime());
 
       set({ loans, loading: false });
     } catch (error) {
