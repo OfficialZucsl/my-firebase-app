@@ -200,7 +200,7 @@ export const useLoanStore = create<LoanStore>((set, get) => ({
   getTotalDebt: () => {
     const { loans } = get();
     return loans
-      .filter(loan => loan.status === 'Active' || loan.status === 'approved')
+      .filter(loan => loan.status === 'Active') // Corrected line
       .reduce((total, loan) => total + (loan.remainingBalance || 0), 0);
   },
 
