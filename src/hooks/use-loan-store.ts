@@ -84,7 +84,7 @@ export const useLoanStore = create<LoanStore>((set, get) => ({
       });
 
       // Sort client-side
-      loans.sort((a, b) => new Date(b.applicationDate).getTime() - new Date(a.applicationDate).getTime());
+      loans.sort((a, b) => new Date(b.applicationDate || 0).getTime() - new Date(a.applicationDate || 0).getTime());
 
       set({ loans, loading: false });
     } catch (error) {
