@@ -44,7 +44,8 @@ export default function Dashboard({ userId }: { userId: string }) {
       fetchLoans(userId);
       fetchPayments(userId);
     }
-  }, [userId, fetchLoans, fetchPayments]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [userId]);
 
   useEffect(() => {
     if (error) {
