@@ -40,7 +40,6 @@ export default function Dashboard({ userId }: { userId: string }) {
   // Fetch data when component mounts with a valid userId
   useEffect(() => {
     if (userId) {
-      console.log('[Dashboard Load] 1. Starting data fetch for user:', userId);
       fetchLoans(userId);
       fetchPayments(userId);
     }
@@ -49,7 +48,6 @@ export default function Dashboard({ userId }: { userId: string }) {
 
   useEffect(() => {
     if (error) {
-      console.log('[Dashboard Load] 2. An error occurred:', error);
       toast({
         title: 'Error',
         description: `Failed to load dashboard data: ${error}`,
@@ -84,7 +82,6 @@ export default function Dashboard({ userId }: { userId: string }) {
 
 
   if (dataLoading && loans.length === 0) {
-    console.log('[Dashboard Load] 3. Rendering loading state.');
     return (
       <div className="flex items-center justify-center h-[calc(100vh-4rem)]">
         <div className="text-center">
@@ -95,8 +92,6 @@ export default function Dashboard({ userId }: { userId: string }) {
     );
   }
   
-  console.log('[Dashboard Load] 4. Finished. Rendering dashboard content.');
-
 
   return (
     <>
