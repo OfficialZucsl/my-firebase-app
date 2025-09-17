@@ -86,13 +86,14 @@ export const useLoanStore = create<LoanStore>((set, get) => ({
       // Sort client-side
       loans.sort((a, b) => new Date(b.applicationDate || 0).getTime() - new Date(a.applicationDate || 0).getTime());
 
-      set({ loans, loading: false });
+      set({ loans });
     } catch (error) {
       console.error('Error fetching loans:', error);
       set({ 
         error: error instanceof Error ? error.message : 'Failed to fetch loans',
-        loading: false 
       });
+    } finally {
+      set({ loading: false });
     }
   },
 
@@ -119,13 +120,14 @@ export const useLoanStore = create<LoanStore>((set, get) => ({
         date: doc.data().date?.toDate(),
       })) as Payment[];
 
-      set({ payments, loading: false });
+      set({ payments });
     } catch (error) {
       console.error('Error fetching payments:', error);
       set({ 
         error: error instanceof Error ? error.message : 'Failed to fetch payments',
-        loading: false 
       });
+    } finally {
+      set({ loading: false });
     }
   },
   
@@ -180,13 +182,13 @@ export const useLoanStore = create<LoanStore>((set, get) => ({
         ]);
       }
       
-      set({ loading: false });
     } catch (error) {
       console.error('Error making payment:', error);
       set({ 
         error: error instanceof Error ? error.message : 'Failed to make payment',
-        loading: false 
       });
+    } finally {
+        set({ loading: false });
     }
   },
 
