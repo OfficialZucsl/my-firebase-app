@@ -1,3 +1,4 @@
+
 'use client';
 
 import React, { createContext, useState, useContext, useEffect, ReactNode } from 'react';
@@ -20,16 +21,21 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   useEffect(() => {
     // This effect runs once on app load to check for an existing session
     const checkUserSession = async () => {
+      console.log('Auth Check: Starting user session check...');
       try {
         const response = await fetch('/api/auth/me');
         const data = await response.json();
         if (data.user) {
           setUser(data.user);
+          console.log('Auth Check: User session found.', data.user);
+        } else {
+          console.log('Auth Check: No active user session found.');
         }
       } catch (error) {
-        console.error('Failed to fetch user session:', error);
+        console.error('Auth Check: Failed to fetch user session.', error);
       } finally {
         setLoading(false); // Stop loading once the check is complete
+        console.log('Auth Check: Session check complete. Loading set to false.');
       }
     };
     checkUserSession();
