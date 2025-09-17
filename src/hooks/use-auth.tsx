@@ -19,27 +19,27 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const router = useRouter();
 
   useEffect(() => {
-    // This effect runs once on app load to check for an existing session
     const checkUserSession = async () => {
-      console.log('Auth Check: Starting user session check...');
+      console.log('[Auth Check] 1. Starting user session check...');
       try {
         const response = await fetch('/api/auth/me');
+        console.log('[Auth Check] 2. API call to /api/auth/me was successful.');
         const data = await response.json();
         if (data.user) {
+          console.log('[Auth Check] 3. User data found. Setting user state.');
           setUser(data.user);
-          console.log('Auth Check: User session found.', data.user);
         } else {
-          console.log('Auth Check: No active user session found.');
+          console.log('[Auth Check] 3. No user data in API response.');
         }
       } catch (error) {
-        console.error('Auth Check: Failed to fetch user session.', error);
+        console.error('[Auth Check] 4. An error occurred during the session check:', error);
       } finally {
-        setLoading(false); // Stop loading once the check is complete
-        console.log('Auth Check: Session check complete. Loading set to false.');
+        console.log('[Auth Check] 5. Session check complete. Setting loading to false.');
+        setLoading(false);
       }
     };
     checkUserSession();
-  }, []);
+  }, []); // The empty array ensures this runs only once on mount
 
   const login = (userData: { uid: string; email: string | null }) => {
     setUser(userData);
